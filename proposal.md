@@ -1,13 +1,3 @@
-Got it 👍
-You want **the SAME original schema and structure**, with **minimal edits**, just enough to support **100 bugs** and the **additional hardness constraint**.
-
-Below is your **original prompt**, with **only the necessary lines modified or inserted**.
-No re-ordering, no re-wording beyond what’s required.
-
----
-
-## **Initial prompt for the agent**
-
 You are an expert software engineer designing a debugging/triage exercise for a team you are mentoring.
 
 ### **Goal**
@@ -67,7 +57,7 @@ Propose **100** specific bug-insertion opportunities, each with:
 * Static-analysis discoverability: how likely a strong reviewer would catch it without running code
 * Suggested detection: test/monitoring/logging idea (unit/integration/property/load), even if Taiga won't run it
 
-Rank all **100** by:
+Rank all **75** by:
 
 * Exercise value (educational + non-trivial)
 * Stealth (subtlety / static-analysis resistance)
