@@ -9,6 +9,7 @@
 #include "simdjson/generic/ondemand/json_type.h"
 #include "simdjson/generic/ondemand/object.h"
 #include "simdjson/generic/ondemand/raw_json_string.h"
+#include "simdjson/generic/ondemand/document.h"
 #include "simdjson/generic/ondemand/value.h"
 #endif // SIMDJSON_CONDITIONAL_INCLUDE
 
@@ -266,21 +267,8 @@ inline bool is_pointer_well_formed(std::string_view json_pointer) noexcept {
 }
 
 simdjson_inline simdjson_result<value> value::at_pointer(std::string_view json_pointer) noexcept {
-  json_type t;
-  SIMDJSON_TRY(type().get(t));
-  switch (t)
-  {
-    case json_type::array:
-      return (*this).get_array().at_pointer(json_pointer);
-    case json_type::object:
-      return (*this).get_object().at_pointer(json_pointer);
-    default:
-      // a non-empty string can be invalid, or accessing a primitive (issue 2154)
-      if (is_pointer_well_formed(json_pointer)) {
-        return NO_SUCH_FIELD;
-      }
-      return INVALID_JSON_POINTER;
-  }
+  json_iterator doc_iter(iter.json_iter());
+  return document::start(std::move(doc_iter)).at_pointer(json_pointer);
 }
 
 simdjson_inline simdjson_result<value> value::at_path(std::string_view json_path) noexcept {
