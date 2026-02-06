@@ -1,0 +1,40 @@
+{
+  "upload_directory": "/tmp/files/",
+  "output_directory": "/tmp/outputs/",
+  "system_prompt": "You are an expert code reviewer. Analyze the provided simdjson codebase for bugs, security issues, and correctness problems. Provide actionable feedback. All files are located in /tmp/files",
+  "task_prompt": "You are an expert code reviewer. Your task is to analyze the simdjson codebase on branch branch-05. Identify the specific regressions introduced in stage1 scanning, stage2 validation, on-demand pointer access, and numeric string parsing. Write your findings to /tmp/outputs/review.md",
+  "rubric": [
+    {
+      "criterion": "Identifies the trailing content acceptance in src/generic/stage2/json_iterator.h in walk_document where the check uses > instead of !=, allowing extra root tokens or garbage after the document",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the numeric string whitespace acceptance in include/simdjson/generic/numberparsing.h in parse_double_in_string where whitespace is skipped before the closing quote, allowing invalid numeric strings like \"1 \"",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the unintended rewind bug in include/simdjson/generic/ondemand/value-inl.h in value::at_pointer where a new document is constructed and document::at_pointer is invoked, rewinding the iterator and invalidating in-flight iteration state",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the scalar classification bug in src/generic/stage1/json_scanner.h in json_scanner::next where nonquote_scalar no longer masks out quotes, causing pseudo-structural detection to misclassify string-adjacent tokens",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the UTF-8 trimming regression in src/generic/stage1/json_structural_indexer.h in trim_partial_utf8 where any byte >= 0x80 is treated as a leading byte, over-trimming valid trailing UTF-8 bytes at batch boundaries",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the unescaped control character validation omission in src/generic/stage1/json_structural_indexer.h in finish where the unescaped_chars_error check is removed, allowing unescaped control characters inside strings to pass stage1",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the structural index swap in src/generic/stage1/json_structural_indexer.h in streaming_final handling where structural_indexes[n] and structural_indexes[n+1] are swapped, corrupting truncated_bytes metadata and batch boundaries",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the unclosed string handling regression in src/generic/stage1/json_structural_indexer.h in streaming_partial where n_structural_indexes is no longer decremented for an unclosed string, leaving a dangling quote structural",
+      "weight": 1
+    }
+  ]
+}

