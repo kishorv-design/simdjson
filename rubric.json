@@ -1,0 +1,40 @@
+{
+  "upload_directory": "/tmp/files/",
+  "output_directory": "/tmp/outputs/",
+  "system_prompt": "You are an expert code reviewer. Analyze the provided simdjson codebase for bugs, security issues, and correctness problems. Provide actionable feedback. All files are located in /tmp/files",
+  "task_prompt": "You are an expert code reviewer. Your task is to analyze the simdjson codebase on branch branch-04. Identify the specific regressions introduced in stage1 validation, stage2 traversal, tape building, string parsing, and numeric negative-zero handling. Write your findings to /tmp/outputs/review.md",
+  "rubric": [
+    {
+      "criterion": "Identifies the uninitialized remainder block bug in src/generic/stage1/utf8_validator.h where the remainder block is not zero-initialized, causing nondeterministic UTF-8 validation failures on non-64-byte inputs",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the document boundary regression in src/generic/stage1/find_next_document_index.h where ':' is treated as a boundary (removed from the skip set), causing premature document truncation inside objects",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the minifier error suppression bug in src/generic/stage1/json_minifier.h in json_minifier::finish where scanner.finish errors are ignored and SUCCESS is always returned",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the missing root-closure check in src/generic/stage2/json_iterator.h in walk_document where the last_structural root validation is removed, allowing unclosed root arrays or objects to pass and corrupt the tape",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the tape layout corruption in src/generic/stage2/tape_builder.h in start_container where tape.skip is removed, causing start container entries to be written immediately and offsets to be wrong",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the remaining length miscalculation in src/generic/stage2/json_iterator.h in remaining_len where *(next_structural) is used instead of *(next_structural-1), causing root primitive parsing to copy the wrong length",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the surrogate validation bug in src/generic/stage2/stringparsing.h in handle_unicode_codepoint where low surrogates are accepted even when allow_replacement is false, letting invalid UTF-16 sequences pass",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the negative-zero handling regression in include/simdjson/generic/numberparsing.h where underflow writes 0.0 unconditionally and the SIMDJSON_MINUS_ZERO_AS_FLOAT path for integers is removed, losing the sign of -0",
+      "weight": 1
+    }
+  ]
+}

