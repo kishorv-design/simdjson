@@ -5,35 +5,35 @@
   "task_prompt": "You are an expert code reviewer. Your task is to analyze the simdjson codebase on branch branch-02. Identify the specific regressions introduced in DOM streaming, element access, and ondemand parser configuration. Write your findings to /tmp/outputs/review.md",
   "rubric": [
     {
-      "criterion": "Identifies the spurious wakeup race in include/simdjson/dom/document_stream-inl.h in stage1_worker::finish where cond_var.wait(lock) is used without a predicate, allowing stage2 to proceed before stage1 completes",
+      "criterion": "Identifies the spurious wakeup race in include/simdjson/dom/document_stream.h in stage1_worker::finish where cond_var.wait(lock) is used without a predicate, allowing stage2 to proceed before stage1 completes",
       "weight": 1
     },
     {
-      "criterion": "Identifies the source slice bug in include/simdjson/dom/document_stream-inl.h in iterator::source where object_or_array uses next_structural_index instead of next_structural_index - 1, causing the returned view to include the first byte of the next document",
+      "criterion": "Identifies the source slice bug in include/simdjson/dom/document_stream.h in iterator::source where object_or_array uses next_structural_index instead of next_structural_index - 1, causing the returned view to include the first byte of the next document",
       "weight": 1
     },
     {
-      "criterion": "Identifies the pointer unescape inconsistency in include/simdjson/dom/element-inl.h in element::at_pointer where pointer segments are unescaped before dispatch, creating inconsistent behavior with object and array at_pointer and failing for escaped keys",
+      "criterion": "Identifies the pointer unescape inconsistency in include/simdjson/dom/element.h in element::at_pointer where pointer segments are unescaped before dispatch, creating inconsistent behavior with object and array at_pointer and failing for escaped keys",
       "weight": 1
     },
     {
-      "criterion": "Identifies the cross-document ordering bug in include/simdjson/dom/element-inl.h in element::operator< where ordering is derived from pointer arithmetic of doc pointers, leading to unstable or meaningless ordering across documents",
+      "criterion": "Identifies the cross-document ordering bug in include/simdjson/dom/element.h in element::operator< where ordering is derived from pointer arithmetic of doc pointers, leading to unstable or meaningless ordering across documents",
       "weight": 1
     },
     {
-      "criterion": "Identifies the case-insensitive lookup regression in include/simdjson/dom/object-inl.h in object::at_key_case_insensitive where key_equals is used instead of key_equals_case_insensitive, breaking mixed-case lookups",
+      "criterion": "Identifies the case-insensitive lookup regression in include/simdjson/dom/object.h in object::at_key_case_insensitive where key_equals is used instead of key_equals_case_insensitive, breaking mixed-case lookups",
       "weight": 1
     },
     {
-      "criterion": "Identifies the array size accounting bug in include/simdjson/dom/array-inl.h in array::size where number_of_slots is returned instead of scope_count, inflating size for nested arrays or objects",
+      "criterion": "Identifies the array size accounting bug in include/simdjson/dom/array.h in array::size where number_of_slots is returned instead of scope_count, inflating size for nested arrays or objects",
       "weight": 1
     },
     {
-      "criterion": "Identifies the shared parser race in include/simdjson/generic/ondemand/parser-inl.h in parser::get_threadlocal_parser_if_exists where a static parser is used instead of thread_local, causing cross-thread data races and buffer corruption",
+      "criterion": "Identifies the shared parser race in include/simdjson/generic/ondemand/parser.h in parser::get_threadlocal_parser_if_exists where a static parser is used instead of thread_local, causing cross-thread data races and buffer corruption",
       "weight": 1
     },
     {
-      "criterion": "Identifies the inverted clamp bug in include/simdjson/generic/ondemand/parser-inl.h in parser::set_max_capacity where large values are clamped down to MINIMAL_DOCUMENT_CAPACITY and small values are accepted, leading to unexpected CAPACITY errors",
+      "criterion": "Identifies the inverted clamp bug in include/simdjson/generic/ondemand/parser.h in parser::set_max_capacity where large values are clamped down to MINIMAL_DOCUMENT_CAPACITY and small values are accepted, leading to unexpected CAPACITY errors",
       "weight": 1
     }
   ]
