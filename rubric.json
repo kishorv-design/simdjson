@@ -1,0 +1,568 @@
+{
+  "upload_directory": "/tmp/files/",
+  "output_directory": "/tmp/outputs/",
+  "system_prompt": "You are an expert code reviewer. Analyze the provided simdjson codebase for bugs, security issues, and correctness problems. Provide actionable feedback. All files are located in /tmp/files",
+  "task_prompt": "You are an expert code reviewer. Your task is to analyze the simdjson codebase on branch branch-01. Identify the specific regressions introduced in DOM parsing, file loading, capacity handling, and streaming batch boundaries. Write your findings to /tmp/outputs/review.md",
+  "rubric": [
+    {
+      "criterion": "Identifies the missing padding allocation bug in include/simdjson/dom/parser-inl.h in parser::read_file where the buffer is allocated with new char[len] instead of allocate_padded_buffer, eliminating SIMDJSON_PADDING and causing out-of-bounds reads during stage1 parsing of loaded files",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the short-read handling bug in include/simdjson/dom/parser-inl.h in parser::read_file where the code only errors when bytes_read == 0, allowing partial reads to be treated as success and silently truncating file contents",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the stale buffer pointer bug in include/simdjson/dom/parser-inl.h in parser::parse_into_document where, after copying into loaded_bytes for realloc_if_needed, buf is not reassigned to loaded_bytes, causing parsing to use the original unpadded buffer",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the capacity allocation mismatch bug in include/simdjson/dom/parser-inl.h in parser::ensure_capacity where target_document capacity is no longer checked or allocated, risking tape or string buffer overflow in the document even when the parser is resized",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the max_capacity clamp removal bug in include/simdjson/dom/parser-inl.h in parser::set_max_capacity where values below MINIMAL_DOCUMENT_CAPACITY are allowed without clamping, leading to unexpected CAPACITY failures",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the unsafe default bug in include/simdjson/dom/parser.h where parse(const char*, size_t) defaults realloc_if_needed to false, causing unpadded C-string inputs to be parsed without required SIMDJSON_PADDING",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the batch boundary bug in include/simdjson/dom/document_stream-inl.h in document_stream::run_stage1 where remaining < batch_size is used, causing exact batch_size tails to be treated as partial and dropping the final document",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the off-by-one bug in include/simdjson/dom/document_stream-inl.h in document_stream::next_batch_start where structural_indexes[n_structural_indexes + 1] is used, skipping bytes and misaligning batch boundaries",
+      "weight": 1
+    }
+  ]
+}
+{
+  "upload_directory": "/tmp/files/",
+  "output_directory": "/tmp/outputs/",
+  "system_prompt": "You are an expert code reviewer. Analyze the provided simdjson codebase for bugs, security issues, and correctness problems. Provide actionable feedback. All files are located in /tmp/files",
+  "task_prompt": "You are an expert code reviewer. Your task is to analyze the simdjson codebase on branch cursor/hard-bug-definition-ad03 at commit 4a9013408348318eab199d1c802833bb7c8687c0. Identify correctness bugs, reliability issues, concurrency hazards, validation gaps, and subtle state or boundary handling regressions across DOM parsing, on-demand parsing, stage1/2 pipelines, numeric parsing, atom parsing, padding, and ISA dispatch. Write your findings to /tmp/outputs/review.md",
+  "rubric": [
+    {
+      "criterion": "Identifies the missing padding allocation bug in include/simdjson/dom/parser-inl.h in parser::read_file where the buffer is allocated with new char[len] instead of allocate_padded_buffer, eliminating SIMDJSON_PADDING and causing out-of-bounds reads during stage1 parsing of loaded files",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the short-read handling bug in include/simdjson/dom/parser-inl.h in parser::read_file where the code only errors when bytes_read == 0, allowing partial reads to be treated as success and silently truncating file contents",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the UTF-8 BOM length bug in include/simdjson/dom/parser-inl.h in parser::parse_into_document where buf is advanced by 3 but len is not decremented, causing length to include the BOM bytes and corrupting parsing for BOM-prefixed inputs",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the stale buffer pointer bug in include/simdjson/dom/parser-inl.h in parser::parse_into_document where, after copying into loaded_bytes for realloc_if_needed, buf is not reassigned to loaded_bytes, causing parsing to use the original unpadded buffer",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the capacity allocation mismatch bug in include/simdjson/dom/parser-inl.h in parser::ensure_capacity where target_document capacity is no longer checked or allocated, risking tape or string buffer overflow in the document even when the parser is resized",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the max_capacity clamp removal bug in include/simdjson/dom/parser-inl.h in parser::set_max_capacity where values below MINIMAL_DOCUMENT_CAPACITY are allowed without clamping, leading to unexpected CAPACITY failures",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the unsafe default bug in include/simdjson/dom/parser.h where parse(const char*, size_t) defaults realloc_if_needed to false, causing unpadded C-string inputs to be parsed without required SIMDJSON_PADDING",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the batch boundary bug in include/simdjson/dom/document_stream-inl.h in document_stream::run_stage1 where remaining < batch_size is used, causing exact batch_size tails to be treated as partial and dropping the final document",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the off-by-one bug in include/simdjson/dom/document_stream-inl.h in document_stream::next_batch_start where structural_indexes[n_structural_indexes + 1] is used, skipping bytes and misaligning batch boundaries",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the spurious wakeup race in include/simdjson/dom/document_stream-inl.h in stage1_worker::finish where cond_var.wait(lock) is used without a predicate, allowing stage2 to proceed before stage1 completes",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the source slice bug in include/simdjson/dom/document_stream-inl.h in iterator::source where object_or_array uses next_structural_index (not minus one), causing the returned view to include the first byte of the next document",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the pointer unescape inconsistency in include/simdjson/dom/element-inl.h in element::at_pointer where pointer segments are unescaped before dispatch, creating inconsistent behavior with object and array at_pointer and failing for escaped keys",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the cross-document ordering bug in include/simdjson/dom/element-inl.h in element::operator< where ordering is derived from pointer arithmetic of doc pointers, leading to unstable or meaningless ordering across documents",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the case-insensitive lookup regression in include/simdjson/dom/object-inl.h in object::at_key_case_insensitive where key_equals is used instead of key_equals_case_insensitive, breaking mixed-case lookups",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the array size accounting bug in include/simdjson/dom/array-inl.h in array::size where number_of_slots is returned instead of scope_count, inflating size for nested arrays or objects",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the stale root element bug in include/simdjson/dom/document-inl.h in document::root where a static cached tape_ref is returned, causing root to refer to stale data after subsequent parses",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the padding assumption bug in include/simdjson/generic/ondemand/parser-inl.h in parser::iterate(std::string&) where padded_string_view(json, json.size()) is used without extending capacity, leading to insufficient padding when capacity == size",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the padding check bypass in include/simdjson/generic/ondemand/parser-inl.h in parser::iterate_many(std::string&) where it forwards to the pointer overload, skipping the padded_string_view padding validation",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the comma-separated mode batch-size bug in include/simdjson/generic/ondemand/parser-inl.h in parser::iterate_many where allow_comma_separated no longer forces batch_size to at least len, allowing documents to be split mid-stream",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the shared parser race in include/simdjson/generic/ondemand/parser-inl.h in parser::get_threadlocal_parser_if_exists where a static parser is used instead of thread_local, causing cross-thread data races and buffer corruption",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the use-after-free bug in include/simdjson/generic/ondemand/parser-inl.h in release_parser where delete parser_instance.get() is called without resetting the unique_ptr, leaving a dangling pointer for future reuse",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the inverted clamp bug in include/simdjson/generic/ondemand/parser-inl.h in parser::set_max_capacity where large values are clamped down to MINIMAL_DOCUMENT_CAPACITY and small values are accepted, leading to unexpected CAPACITY errors",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the string buffer reuse bug in include/simdjson/generic/ondemand/document_stream-inl.h in document_stream::next_document where doc.iter._string_buf_loc is no longer reset between documents, leading to string corruption across streamed documents",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the streaming flag omission bug in include/simdjson/generic/ondemand/document_stream-inl.h in document_stream::start where doc.iter._streaming is not set to true, causing root checks to run in non-streaming mode and mis-handle streams",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the iterator re-anchor removal in include/simdjson/generic/ondemand/document_stream-inl.h in document_stream::next where json_iterator is not re-anchored after a new batch, causing pointers to reference the previous buffer window",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the batch boundary bug in include/simdjson/generic/ondemand/document_stream-inl.h in document_stream::run_stage1 where remaining < batch_size is used, causing exact batch_size tails to be treated as partial and truncating the final document",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the missing rewind bug in include/simdjson/generic/ondemand/document-inl.h in document::at_pointer where the rewind call is removed, making repeated at_pointer calls order-dependent and returning wrong values or NO_SUCH_FIELD",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the state leak in include/simdjson/generic/ondemand/document-inl.h in document::count_elements where the post-count rewind is removed, leaving the iterator mid-array and breaking subsequent iteration",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the state leak in include/simdjson/generic/ondemand/document-inl.h in document::count_fields where the post-count rewind is removed, leaving the iterator mid-object and breaking subsequent lookups",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the number classification regression in include/simdjson/generic/ondemand/document-inl.h in document::get_number_type where it relies on is_root_integer(false), misclassifying exponentials and ignoring trailing validation",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the unintended rewind bug in include/simdjson/generic/ondemand/value-inl.h in value::at_pointer where a new document is constructed and document::at_pointer is invoked, rewinding the iterator and invalidating in-flight iteration state",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the unordered lookup regression in include/simdjson/generic/ondemand/object-inl.h in object::find_field_unordered where find_field_raw is used instead of find_field_unordered_raw, preventing wraparound and causing out-of-order misses",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the UTF-8 trimming regression in src/generic/stage1/json_structural_indexer.h in trim_partial_utf8 where any byte >= 0x80 is treated as a leading byte, over-trimming valid trailing UTF-8 bytes at batch boundaries",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the unescaped control character validation omission in src/generic/stage1/json_structural_indexer.h in finish where the unescaped_chars_error check is removed, allowing unescaped control characters inside strings to pass stage1",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the structural index swap in src/generic/stage1/json_structural_indexer.h in streaming_final handling where structural_indexes[n] and structural_indexes[n+1] are swapped, corrupting truncated_bytes metadata and batch boundaries",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the unclosed string handling regression in src/generic/stage1/json_structural_indexer.h in streaming_partial where n_structural_indexes is no longer decremented for an unclosed string, leaving a dangling quote structural",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the empty input handling regression in src/generic/stage1/json_structural_indexer.h in index where len == 0 returns SUCCESS instead of EMPTY, allowing stage2 to proceed with no structurals",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the scalar classification bug in src/generic/stage1/json_scanner.h in json_scanner::next where nonquote_scalar no longer masks out quotes, causing pseudo-structural detection to misclassify string-adjacent tokens",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the unclosed string acceptance bug in src/generic/stage1/json_scanner.h in json_scanner::finish where scanner.finish errors are ignored and SUCCESS is returned unconditionally",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the cross-block string state bug in src/generic/stage1/json_string_scanner.h where prev_in_string uses a shift by 62 instead of 63, mis-tracking string state on 64-byte boundaries",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the uninitialized remainder block bug in src/generic/stage1/utf8_validator.h where the remainder block is not zero-initialized, causing nondeterministic UTF-8 validation failures on non-64-byte inputs",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the document boundary regression in src/generic/stage1/find_next_document_index.h where ':' is treated as a boundary (removed from the skip set), causing premature document truncation inside objects",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the minifier error suppression bug in src/generic/stage1/json_minifier.h in json_minifier::finish where scanner.finish errors are ignored and SUCCESS is always returned",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the missing root-closure check in src/generic/stage2/json_iterator.h in walk_document where the last_structural root validation is removed, allowing unclosed root arrays or objects to pass and corrupt the tape",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the trailing content acceptance in src/generic/stage2/json_iterator.h in walk_document where the check uses > instead of !=, allowing extra root tokens or garbage after the document",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the root number padding change in src/generic/stage2/tape_builder.h in visit_root_number where the copy is padded with null bytes instead of spaces, causing root numeric parsing failures when null-terminated",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the key-only replacement policy change in src/generic/stage2/tape_builder.h in visit_string where allow_replacement is passed as key, allowing replacement in keys but not in values and creating inconsistent validation",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the tape layout corruption in src/generic/stage2/tape_builder.h in start_container where tape.skip is removed, causing start container entries to be written immediately and offsets to be wrong",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the array count regression in src/generic/stage2/tape_builder.h in increment_count where counts are only incremented for objects, undercounting arrays and breaking size calculations",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the tape layout shift in src/generic/stage2/tape_writer.h in append_u64 where append2 is used, consuming two tape slots for uint64_t and misaligning subsequent tape entries",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the token skip bug in src/generic/stage2/json_iterator.h in advance where next_structural is pre-incremented, skipping the first token of each value",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the remaining length miscalculation in src/generic/stage2/json_iterator.h in remaining_len where *(next_structural) is used instead of *(next_structural-1), causing root primitive parsing to copy the wrong length",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the surrogate validation bug in src/generic/stage2/stringparsing.h in handle_unicode_codepoint where low surrogates are accepted even when allow_replacement is false, letting invalid UTF-16 sequences pass",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the unknown escape acceptance in src/generic/stage2/stringparsing.h in parse_string where unknown escapes are passed through as literal characters instead of returning an error",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the leading-zero acceptance in include/simdjson/generic/numberparsing.h in parse_number where the leading-zero validation is removed, allowing numbers like 01 or -01 to parse as valid",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the exponent overflow regression in include/simdjson/generic/numberparsing.h in parse_exponent where truncation of 19+ digit exponents is removed, allowing exp_number overflow and incorrect exponent math",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the negative-zero handling regression in include/simdjson/generic/numberparsing.h where underflow writes 0.0 unconditionally and the SIMDJSON_MINUS_ZERO_AS_FLOAT path for integers is removed, losing the sign of -0",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the numeric string whitespace acceptance in include/simdjson/generic/numberparsing.h in parse_double_in_string where whitespace is skipped before the closing quote, allowing invalid numeric strings like \"1 \"",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the newline finisher regression in include/simdjson/generic/numberparsing.h in integer_string_finisher where '\\n' is marked NUMBER_ERROR instead of SUCCESS, rejecting numbers followed by newline whitespace",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the boundary misclassification in include/simdjson/generic/numberparsing.h in get_number_type where memcmp compares only 18 bytes against the signed boundary, misclassifying values near 9223372036854775808",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the true atom terminator check bug in include/simdjson/generic/atomparsing.h in is_valid_true_atom where src[3] is used instead of src[4], causing incorrect acceptance or rejection of true tokens",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the false atom match bug in include/simdjson/generic/atomparsing.h in is_valid_false_atom where comparison starts at src+2 with \"lse\", breaking validation of false tokens",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the conditional padding omission in include/simdjson/padded_string-inl.h in allocate_padded_buffer where inputs smaller than SIMDJSON_PADDING allocate only length bytes, removing required padding for small documents",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the ISA selection bug in src/implementation.cpp in available_implementation_list::detect_best_supported where any overlap of supported and required instruction sets is accepted, allowing selection of implementations that are missing required SIMD features",
+      "weight": 1
+    }
+  ]
+}
+{
+  "upload_directory": "/tmp/files/",
+  "output_directory": "/tmp/outputs/",
+  "system_prompt": "You are an expert code reviewer. Analyze the provided codebase for bugs, security issues, and correctness problems. All files are located in /tmp/files.",
+  "task_prompt": "You are an expert code reviewer. Analyze the simdjson codebase on branch cursor/hard-bug-definition-ad03 at commit 4a9013408348318eab199d1c802833bb7c8687c0. Focus on DOM parsing, on-demand parsing, stage1 indexing, stage2 tape building, number and atom parsing, padding, and ISA dispatch. Write your findings to /tmp/outputs/review.md.",
+  "rubric": [
+    {
+      "criterion": "B01: Identifies that dom::parser::read_file in include/simdjson/dom/parser-inl.h allocates loaded_bytes with new char[len] instead of allocate_padded_buffer, removing SIMDJSON_PADDING and enabling out-of-bounds reads during stage1 when load/load_many parses files.",
+      "weight": 1
+    },
+    {
+      "criterion": "B02: Identifies that dom::parser::read_file now treats any nonzero fread as success (bytes_read == 0 check only), allowing short reads to be accepted and silently truncating file contents.",
+      "weight": 1
+    },
+    {
+      "criterion": "B03: Identifies that BOM handling in dom::parser::parse_into_document increments buf by 3 without decrementing len, so BOM-prefixed inputs are parsed with an incorrect length and can read past the JSON.",
+      "weight": 1
+    },
+    {
+      "criterion": "B04: Identifies that dom::parser::parse_into_document copies into loaded_bytes but no longer rebinds buf to loaded_bytes, so parsing can still read from an unpadded or short-lived original buffer.",
+      "weight": 1
+    },
+    {
+      "criterion": "B05: Identifies that dom::parser::ensure_capacity in include/simdjson/dom/parser-inl.h no longer allocates the target document when needed, leaving document tape/string buffers undersized relative to desired_capacity.",
+      "weight": 1
+    },
+    {
+      "criterion": "B06: Identifies that dom::parser::set_max_capacity no longer clamps to MINIMAL_DOCUMENT_CAPACITY, allowing too-small max_capacity values that trigger unexpected CAPACITY errors.",
+      "weight": 1
+    },
+    {
+      "criterion": "B07: Identifies that dom::parser::parse(const char*, size_t) default realloc_if_needed is now false in include/simdjson/dom/parser.h, so unpadded C strings can cause out-of-bounds reads unless callers override the default.",
+      "weight": 1
+    },
+    {
+      "criterion": "B08: Identifies that dom::document_stream::run_stage1 uses remaining < batch_size instead of <= in include/simdjson/dom/document_stream-inl.h, causing the final batch of exactly batch_size bytes to be treated as streaming_partial and drop/truncate the last document.",
+      "weight": 1
+    },
+    {
+      "criterion": "B09: Identifies that dom::document_stream::next_batch_start uses structural_indexes[n+1] instead of [n], shifting batch boundaries and skipping or repeating bytes between batches.",
+      "weight": 1
+    },
+    {
+      "criterion": "B10: Identifies that stage1_worker::finish in include/simdjson/dom/document_stream-inl.h waits on the condition variable without a predicate, allowing spurious wakeups that can start stage2 before stage1 completes.",
+      "weight": 1
+    },
+    {
+      "criterion": "B11: Identifies that dom::document_stream::iterator::source uses next_structural_index instead of next_structural_index-1 for object/array documents, causing source() to include the first byte of the next document.",
+      "weight": 1
+    },
+    {
+      "criterion": "B12: Identifies that dom::element::at_pointer in include/simdjson/dom/element-inl.h now unescapes pointer segments before delegating, making element::at_pointer behavior inconsistent with object/array at_pointer and producing mismatched results for escaped keys.",
+      "weight": 1
+    },
+    {
+      "criterion": "B13: Identifies that dom::element::operator< now orders by doc pointer plus json_index, leading to unstable ordering or cross-document comparisons that can corrupt ordering invariants in ordered containers.",
+      "weight": 1
+    },
+    {
+      "criterion": "B14: Identifies that dom::object::at_key_case_insensitive uses key_equals instead of key_equals_case_insensitive, breaking case-insensitive lookups.",
+      "weight": 1
+    },
+    {
+      "criterion": "B15: Identifies that dom::array::size in include/simdjson/dom/array-inl.h returns number_of_slots (tape span) instead of scope_count (element count), inflating size for arrays containing nested containers.",
+      "weight": 1
+    },
+    {
+      "criterion": "B16: Identifies that dom::document::root caches a static tape_ref in include/simdjson/dom/document-inl.h, so subsequent parses can return a stale root element from a previous document.",
+      "weight": 1
+    },
+    {
+      "criterion": "B17: Identifies that ondemand::parser::iterate(std::string&) now constructs padded_string_view(json, json.size()) in include/simdjson/generic/ondemand/parser-inl.h, bypassing pad_with_reserve and removing required padding when capacity == size.",
+      "weight": 1
+    },
+    {
+      "criterion": "B18: Identifies that ondemand::parser::iterate_many(std::string&) now forwards to the pointer overload without padding validation, allowing under-padded strings to be parsed and read out of bounds.",
+      "weight": 1
+    },
+    {
+      "criterion": "B19: Identifies that ondemand::parser::iterate_many removed the allow_comma_separated batch_size >= len adjustment, so comma-separated mode can split a single large document across batches and fail mid-document.",
+      "weight": 1
+    },
+    {
+      "criterion": "B20: Identifies that ondemand::parser::get_threadlocal_parser_if_exists uses a static global parser instead of thread_local, creating cross-thread shared state and data races.",
+      "weight": 1
+    },
+    {
+      "criterion": "B21: Identifies that release_parser deletes parser_instance.get() without resetting the unique_ptr, leaving a dangling non-null pointer that can be reused and cause use-after-free.",
+      "weight": 1
+    },
+    {
+      "criterion": "B22: Identifies that ondemand::parser::set_max_capacity clamps incorrectly (values above MINIMAL_DOCUMENT_CAPACITY are reduced to MINIMAL_DOCUMENT_CAPACITY), shrinking max capacity unexpectedly.",
+      "weight": 1
+    },
+    {
+      "criterion": "B23: Identifies that ondemand::document_stream::next_document no longer resets doc.iter._string_buf_loc, causing string buffer offsets to leak between documents and corrupt strings or overflow the buffer.",
+      "weight": 1
+    },
+    {
+      "criterion": "B24: Identifies that ondemand::document_stream::start does not set doc.iter._streaming = true, breaking streaming-specific behavior in root checks.",
+      "weight": 1
+    },
+    {
+      "criterion": "B25: Identifies that ondemand::document_stream::next no longer re-anchors json_iterator after loading a new batch, leaving iterators pointing into the previous batch buffer.",
+      "weight": 1
+    },
+    {
+      "criterion": "B26: Identifies that ondemand::document_stream::run_stage1 uses remaining < batch_size instead of <=, misclassifying exact-size final batches as streaming_partial and truncating the final document.",
+      "weight": 1
+    },
+    {
+      "criterion": "B27: Identifies that ondemand::document::at_pointer no longer calls rewind, making repeated at_pointer calls order-dependent and sensitive to prior iteration state.",
+      "weight": 1
+    },
+    {
+      "criterion": "B28: Identifies that ondemand::document::count_elements no longer rewinds on success, so later iteration starts mid-array or fails with OUT_OF_ORDER in debug mode.",
+      "weight": 1
+    },
+    {
+      "criterion": "B29: Identifies that ondemand::document::count_fields no longer rewinds on success, so later object access misses earlier fields or fails ordering checks.",
+      "weight": 1
+    },
+    {
+      "criterion": "B30: Identifies that ondemand::document::get_number_type now uses is_root_integer(false) and returns only signed_integer or floating_point_number, misclassifying unsigned or big integers.",
+      "weight": 1
+    },
+    {
+      "criterion": "B31: Identifies that ondemand::value::at_pointer constructs a document from a copied json_iterator and calls document::at_pointer, effectively rewinding and invalidating ongoing iteration state.",
+      "weight": 1
+    },
+    {
+      "criterion": "B32: Identifies that ondemand::object::find_field_unordered now uses find_field_raw (ordered), so out-of-order lookups no longer scan from the beginning and return NO_SUCH_FIELD incorrectly.",
+      "weight": 1
+    },
+    {
+      "criterion": "B33: Identifies that trim_partial_utf8 in src/generic/stage1/json_structural_indexer.h treats any byte >= 0x80 as a leading byte in short buffers, trimming valid continuation bytes and causing UTF-8 errors across batch boundaries.",
+      "weight": 1
+    },
+    {
+      "criterion": "B34: Identifies that json_structural_indexer::finish no longer checks unescaped_chars_error, allowing unescaped control characters in strings to pass stage1 validation.",
+      "weight": 1
+    },
+    {
+      "criterion": "B35: Identifies that streaming_final metadata in json_structural_indexer::finish swaps structural_indexes[n] and [n+1], corrupting truncated_bytes and batch boundary calculations.",
+      "weight": 1
+    },
+    {
+      "criterion": "B36: Identifies that streaming_partial no longer decrements n_structural_indexes when an unclosed string is detected, leaving a trailing quote structural index that breaks stage2.",
+      "weight": 1
+    },
+    {
+      "criterion": "B37: Identifies that json_structural_indexer::index returns SUCCESS on len == 0 instead of EMPTY, causing later stages to operate on empty inputs as if they were valid.",
+      "weight": 1
+    },
+    {
+      "criterion": "B38: Identifies that json_scanner::next no longer masks quotes from nonquote_scalar, causing scalar-start detection to treat quote characters as scalar content and mis-index structurals near strings.",
+      "weight": 1
+    },
+    {
+      "criterion": "B39: Identifies that json_scanner::finish always returns SUCCESS, ignoring UNCLOSED_STRING and accepting unterminated strings.",
+      "weight": 1
+    },
+    {
+      "criterion": "B40: Identifies that json_string_scanner uses shift 62 to compute prev_in_string, breaking string state when a quote lands on a 64-byte boundary.",
+      "weight": 1
+    },
+    {
+      "criterion": "B41: Identifies that utf8_validator::generic_validate_utf8 leaves the remainder block uninitialized, causing nondeterministic UTF-8 validation results for non-64-byte inputs.",
+      "weight": 1
+    },
+    {
+      "criterion": "B42: Identifies that find_next_document_index no longer excludes ':' from boundary detection, so colon can be treated as a document boundary and truncate objects improperly.",
+      "weight": 1
+    },
+    {
+      "criterion": "B43: Identifies that json_minifier::finish ignores scanner.finish errors, so minify reports SUCCESS on malformed JSON with unterminated strings.",
+      "weight": 1
+    },
+    {
+      "criterion": "B44: Identifies that stage2::json_iterator::walk_document removes the root closing check for non-streaming, allowing unclosed root containers to pass and corrupt the tape.",
+      "weight": 1
+    },
+    {
+      "criterion": "B45: Identifies that stage2::json_iterator::walk_document now accepts trailing tokens by checking next_structural_index > n_structural_indexes instead of !=, so extra garbage at the end is silently accepted.",
+      "weight": 1
+    },
+    {
+      "criterion": "B46: Identifies that tape_builder::visit_root_number pads the copied buffer with '\\0' instead of spaces, causing root-number parsing failures when the copy is NUL-terminated.",
+      "weight": 1
+    },
+    {
+      "criterion": "B47: Identifies that tape_builder::visit_string passes allow_replacement = key, enabling replacement for object keys only and creating inconsistent key/value Unicode handling.",
+      "weight": 1
+    },
+    {
+      "criterion": "B48: Identifies that tape_builder::start_container no longer calls tape.skip, so the start element is written immediately and container start/end pointers become inconsistent.",
+      "weight": 1
+    },
+    {
+      "criterion": "B49: Identifies that tape_builder::increment_count only increments for objects, so array element counts remain zero and array size reporting is wrong.",
+      "weight": 1
+    },
+    {
+      "criterion": "B50: Identifies that tape_writer::append_u64 uses append2, writing UINT64 values as two tape slots and misaligning the tape for subsequent entries.",
+      "weight": 1
+    },
+    {
+      "criterion": "B51: Identifies that stage2::json_iterator::advance pre-increments next_structural, skipping the current token and causing parsing to miss the first structural element.",
+      "weight": 1
+    },
+    {
+      "criterion": "B52: Identifies that stage2::json_iterator::remaining_len uses *next_structural instead of *(next_structural-1), producing a shorter remaining length and breaking root scalar parsing.",
+      "weight": 1
+    },
+    {
+      "criterion": "B53: Identifies that stringparsing::handle_unicode_codepoint treats isolated low surrogates as replacement even when allow_replacement is false, accepting invalid Unicode sequences.",
+      "weight": 1
+    },
+    {
+      "criterion": "B54: Identifies that stringparsing::parse_string treats unknown escape sequences as literal characters instead of erroring, accepting invalid JSON escapes like \\v.",
+      "weight": 1
+    },
+    {
+      "criterion": "B55: Identifies that numberparsing::parse_number removed the leading-zero check, allowing invalid numbers like 01 or -01 to be accepted as valid JSON numbers.",
+      "weight": 1
+    },
+    {
+      "criterion": "B56: Identifies that parse_exponent no longer truncates 19+ digit exponents, allowing exponent overflow and incorrect results on huge exponent strings.",
+      "weight": 1
+    },
+    {
+      "criterion": "B57: Identifies that write_float now writes +0.0 for negative zero cases and the integer path no longer preserves -0.0, removing negative zero semantics.",
+      "weight": 1
+    },
+    {
+      "criterion": "B58: Identifies that parse_double_in_string now skips whitespace before the closing quote, accepting numeric strings like \"1 \" as valid.",
+      "weight": 1
+    },
+    {
+      "criterion": "B59: Identifies that integer_string_finisher marks '\\n' as NUMBER_ERROR instead of SUCCESS, causing valid numbers followed by newline to fail parsing.",
+      "weight": 1
+    },
+    {
+      "criterion": "B60: Identifies that get_number_type compares only 18 bytes of the signed boundary string, misclassifying numbers near 9223372036854775808 as signed vs unsigned.",
+      "weight": 1
+    },
+    {
+      "criterion": "B61: Identifies that atomparsing::is_valid_true_atom checks the terminator at src[3] instead of src[4], causing incorrect validation for true tokens with trailing characters.",
+      "weight": 1
+    },
+    {
+      "criterion": "B62: Identifies that atomparsing::is_valid_false_atom compares src+2 with \"lse\" and len variant does the same, breaking false token validation and accepting/rejecting incorrect sequences.",
+      "weight": 1
+    },
+    {
+      "criterion": "B63: Identifies that internal::allocate_padded_buffer allocates only length bytes when length < SIMDJSON_PADDING, omitting required padding for small inputs and enabling out-of-bounds reads.",
+      "weight": 1
+    },
+    {
+      "criterion": "B64: Identifies that available_implementation_list::detect_best_supported selects an implementation if any required instruction set bit overlaps, rather than requiring the full set, which can choose unsupported ISAs and crash with illegal instructions.",
+      "weight": 1
+    }
+  ]
+}

