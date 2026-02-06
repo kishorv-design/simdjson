@@ -1,0 +1,40 @@
+{
+  "upload_directory": "/tmp/files/",
+  "output_directory": "/tmp/outputs/",
+  "system_prompt": "You are an expert code reviewer. Analyze the provided simdjson codebase for bugs, security issues, and correctness problems. Provide actionable feedback. All files are located in /tmp/files",
+  "task_prompt": "You are an expert code reviewer. Your task is to analyze the simdjson codebase on branch branch-03. Identify the specific regressions introduced in on-demand parsing, streaming behavior, and stage1 empty-input handling. Write your findings to /tmp/outputs/review.md",
+  "rubric": [
+    {
+      "criterion": "Identifies the padding assumption bug in include/simdjson/generic/ondemand/parser-inl.h in parser::iterate(std::string&) where padded_string_view(json, json.size()) is used without extending capacity, leading to insufficient padding when capacity == size",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the padding check bypass in include/simdjson/generic/ondemand/parser-inl.h in parser::iterate_many(std::string&) where it forwards to the pointer overload, skipping the padded_string_view padding validation",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the string buffer reuse bug in include/simdjson/generic/ondemand/document_stream-inl.h in document_stream::next_document where doc.iter._string_buf_loc is no longer reset between documents, leading to string corruption across streamed documents",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the streaming flag omission bug in include/simdjson/generic/ondemand/document_stream-inl.h in document_stream::start where doc.iter._streaming is not set to true, causing root checks to run in non-streaming mode and mis-handle streams",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the iterator re-anchor removal in include/simdjson/generic/ondemand/document_stream-inl.h in document_stream::next where json_iterator is not re-anchored after a new batch, causing pointers to reference the previous buffer window",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the batch boundary bug in include/simdjson/generic/ondemand/document_stream-inl.h in document_stream::run_stage1 where remaining < batch_size is used, causing exact batch_size tails to be treated as partial and truncating the final document",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the missing rewind bug in include/simdjson/generic/ondemand/document-inl.h in document::at_pointer where the rewind call is removed, making repeated at_pointer calls order-dependent and returning wrong values or NO_SUCH_FIELD",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the empty input handling regression in src/generic/stage1/json_structural_indexer.h in index where len == 0 returns SUCCESS instead of EMPTY, allowing stage2 to proceed with no structurals",
+      "weight": 1
+    }
+  ]
+}
