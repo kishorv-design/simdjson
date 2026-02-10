@@ -1,0 +1,40 @@
+{
+  "upload_directory": "/tmp/files/",
+  "output_directory": "/tmp/outputs/",
+  "system_prompt": "You are an expert code reviewer. Analyze the provided codebase for bugs, security issues, and correctness problems. Provide actionable feedback. All files are located in /tmp/files",
+  "task_prompt": "You are an expert code reviewer. Your task is to analyze the simdjson JSON parser codebase. This C++ library implements a two-stage parser (structural indexing then tape building), DOM and ondemand APIs, document streaming (parse_many), number and string parsing with UTF-8/surrogate handling, and error handling. Identify subtle bugs, correctness issues, API contract drift, concurrency/race problems, tape or buffer layout issues, and numeric/encoding edge cases in core parsing and iteration paths. Focus on issues detectable via static analysis. Write your findings to /tmp/outputs/review.md.",
+  "rubric": [
+    {
+      "criterion": "Identifies the tape container start packing bug in src/generic/stage2/tape_builder.h end_container where the start tape element packs count in low bits and index in high bits instead of next_tape_index in low 32 bits and saturated count in high 24 bits",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the surrogate pair low-surrogate range bug in src/generic/stage2/stringparsing.h handle_unicode_codepoint where the validity check uses low_bit >= 0x3FF instead of (low_bit >> 10), incorrectly rejecting the valid low surrogate at 0xDFFF",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the is_fatal error set bug in include/simdjson/error-inl.h is_fatal where DEPTH_ERROR is omitted from the set of fatal error codes",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the float fast path power bound bug in include/simdjson/generic/numberparsing.h compute_float_64 where the fast path uses power <= 21 instead of power <= 22 in both FLT_EVAL_METHOD branches",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the doc_index update bug in include/simdjson/dom/document_stream-inl.h document_stream::next where doc_index is not set to the start of the first document when loading a new batch inside the while (error == EMPTY) loop",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the root structural brace match bug in src/generic/stage2/json_iterator.h walk_document where for root '[' the check uses last_structural() != '}' instead of last_structural() != ']', allowing mismatched [ ... }",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the decimal exponent sign bug in include/simdjson/generic/numberparsing.h parse_decimal_after_separator where exponent is set to p - first_after_period instead of first_after_period - p",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the stage1_worker ordering bug in include/simdjson/dom/document_stream-inl.h stage1_worker start_thread lambda where has_work = false is set before assigning stage1_thread_error from run_stage1",
+      "weight": 1
+    }
+  ]
+}

