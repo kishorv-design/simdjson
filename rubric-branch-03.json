@@ -13,7 +13,7 @@
       "weight": 1
     },
     {
-      "criterion": "Identifies that in include/simdjson/generic/ondemand/document_stream-inl.h, document_stream::next_document resets doc.iter._depth and doc.iter._root but never resets doc.iter._string_buf_loc, even though json_iterator::unescape writes into parser->string_buf and json_iterator::rewind explicitly resets _string_buf_loc to parser->string_buf.get(); in streaming we never call rewind, so without resetting _string_buf_loc between documents, unescaped strings from later documents append into the previous buffer region, leading to corruption/overflow after enough documents",
+      "criterion": "Identifies that in include/simdjson/generic/ondemand/document_stream-inl.h, document_stream::next_document resets doc.iter._depth and doc.iter._root but never resets doc.iter._string_buf_loc (no assignment in next_document), even though json_iterator::unescape uses _string_buf_loc as the write pointer into parser->string_buf; since parser->string_buf is allocated to hold a single document of size capacity, leaving _string_buf_loc advanced across documents causes the pointer to monotonically grow and eventually write past the buffer when multiple documents’ unescaped strings cumulatively exceed capacity",
       "weight": 1
     },
     {
@@ -25,7 +25,7 @@
       "weight": 1
     },
     {
-      "criterion": "Identifies the end-of-stream misclassification in include/simdjson/generic/ondemand/document_stream-inl.h in document_stream::run_stage1: when remaining == batch_size and batch_start + batch_size == len (the true final chunk), the code goes to the streaming_partial path instead of streaming_final, so stage1 executes truncation logic (find_next_document_index) meant for incomplete windows; this can truncate the structural index to an earlier boundary and cause the last document in the final chunk to be skipped",
+      "criterion": "Identifies the end-of-stream misclassification in include/simdjson/generic/ondemand/document_stream-inl.h in document_stream::run_stage1: when remaining == batch_size and batch_start + batch_size == len (i.e., this batch exactly reaches the end of the provided buffer), the code selects streaming_partial instead of streaming_final; streaming_partial runs find_next_document_index and can truncate to the last complete document boundary, which is only correct for non-final windows, so using it on the last window can drop the final document",
       "weight": 1
     },
     {
