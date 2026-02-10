@@ -13,7 +13,7 @@
       "weight": 1
     },
     {
-      "criterion": "Identifies the missing string-buffer reset in include/simdjson/generic/ondemand/document_stream-inl.h in document_stream::next_document where only doc.iter._root is updated and _string_buf_loc is never reset (it is used by json_iterator::unescape), causing the string buffer pointer to keep advancing across documents and eventually corrupt or overflow string storage",
+      "criterion": "Identifies that in include/simdjson/generic/ondemand/document_stream-inl.h, document_stream::next_document resets doc.iter._depth and doc.iter._root but never resets doc.iter._string_buf_loc, even though json_iterator::unescape writes into parser->string_buf and json_iterator::rewind explicitly resets _string_buf_loc to parser->string_buf.get(); in streaming we never call rewind, so without resetting _string_buf_loc between documents, unescaped strings from later documents append into the previous buffer region, leading to corruption/overflow after enough documents",
       "weight": 1
     },
     {
@@ -25,7 +25,7 @@
       "weight": 1
     },
     {
-      "criterion": "Identifies the end-of-stream misclassification in include/simdjson/generic/ondemand/document_stream-inl.h in document_stream::run_stage1 where remaining < batch_size selects streaming_final, so a last chunk with remaining == batch_size is treated as streaming_partial even though batch_start + batch_size == len; this forces truncation logic and can drop the final document",
+      "criterion": "Identifies the end-of-stream misclassification in include/simdjson/generic/ondemand/document_stream-inl.h in document_stream::run_stage1: when remaining == batch_size and batch_start + batch_size == len (the true final chunk), the code goes to the streaming_partial path instead of streaming_final, so stage1 executes truncation logic (find_next_document_index) meant for incomplete windows; this can truncate the structural index to an earlier boundary and cause the last document in the final chunk to be skipped",
       "weight": 1
     },
     {
