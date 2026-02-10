@@ -13,7 +13,7 @@
       "weight": 1
     },
     {
-      "criterion": "Identifies the string buffer reuse bug in include/simdjson/generic/ondemand/document_stream-inl.h in document_stream::next_document where doc.iter._string_buf_loc is no longer reset between documents, leading to string corruption across streamed documents",
+      "criterion": "Identifies the missing string-buffer reset in include/simdjson/generic/ondemand/document_stream-inl.h in document_stream::next_document where only doc.iter._root is updated and _string_buf_loc is never reset (it is used by json_iterator::unescape), causing the string buffer pointer to keep advancing across documents and eventually corrupt or overflow string storage",
       "weight": 1
     },
     {
@@ -25,7 +25,7 @@
       "weight": 1
     },
     {
-      "criterion": "Identifies the batch boundary bug in include/simdjson/generic/ondemand/document_stream-inl.h in document_stream::run_stage1 where remaining < batch_size is used, causing exact batch_size tails to be treated as partial and truncating the final document",
+      "criterion": "Identifies the end-of-stream misclassification in include/simdjson/generic/ondemand/document_stream-inl.h in document_stream::run_stage1 where remaining < batch_size selects streaming_final, so a last chunk with remaining == batch_size is treated as streaming_partial even though batch_start + batch_size == len; this forces truncation logic and can drop the final document",
       "weight": 1
     },
     {
