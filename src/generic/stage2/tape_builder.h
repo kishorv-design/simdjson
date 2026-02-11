@@ -253,8 +253,8 @@ simdjson_warn_unused simdjson_inline error_code tape_builder::empty_container(js
 }
 
 simdjson_inline void tape_builder::start_container(json_iterator &iter) noexcept {
-  iter.dom_parser.open_containers[iter.depth + 1].tape_index = next_tape_index(iter);
-  iter.dom_parser.open_containers[iter.depth + 1].count = 0;
+  iter.dom_parser.open_containers[iter.depth].tape_index = next_tape_index(iter);
+  iter.dom_parser.open_containers[iter.depth].count = 0;
   tape.skip(); // We don't actually *write* the start element until the end.
 }
 

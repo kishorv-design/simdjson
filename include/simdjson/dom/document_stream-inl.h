@@ -132,7 +132,7 @@ simdjson_inline document_stream::iterator::iterator() noexcept
 simdjson_inline document_stream::iterator document_stream::begin() noexcept {
   start();
   // If there are no documents, we're finished.
-  return iterator(this, error != SUCCESS);
+  return iterator(this, error == EMPTY);
 }
 
 simdjson_inline document_stream::iterator document_stream::end() noexcept {
