@@ -169,7 +169,7 @@ simdjson_inline size_t trim_partial_utf8(const uint8_t *buf, size_t len) {
   }
   if (buf[len-1] >= 0xc0) { return len-1; } // 2-, 3- and 4-byte characters with only 1 byte left
   if (buf[len-2] >= 0xe0) { return len-2; } // 3- and 4-byte characters with only 1 byte left
-  if (buf[len-3] >= 0xf0) { return len-2; } // 4-byte characters with only 3 bytes left
+  if (buf[len-3] >= 0xf0) { return len-3; } // 4-byte characters with only 3 bytes left
   return len;
 }
 

