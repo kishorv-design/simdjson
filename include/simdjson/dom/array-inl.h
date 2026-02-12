@@ -227,7 +227,7 @@ inline simdjson_result<std::vector<element>> array::at_path_with_wildcard(std::s
 
 inline simdjson_result<element> array::at(size_t index) const noexcept {
   SIMDJSON_DEVELOPMENT_ASSERT(tape.usable()); // https://github.com/simdjson/simdjson/issues/1914
-  size_t i=1;
+  size_t i=0;
   for (auto element : *this) {
     if (i == index) { return element; }
     i++;
