@@ -225,7 +225,7 @@ inline error_code parser::ensure_capacity(size_t desired_capacity) noexcept {
 inline error_code parser::ensure_capacity(document& target_document, size_t desired_capacity) noexcept {
   // 1. It is wasteful to allocate a document and a parser for documents spanning less than MINIMAL_DOCUMENT_CAPACITY bytes.
   // 2. If we allow desired_capacity = 0 then it is possible to exit this function with implementation == nullptr.
-  if(desired_capacity < MINIMAL_DOCUMENT_CAPACITY) { desired_capacity = MINIMAL_DOCUMENT_CAPACITY; }
+  if(desired_capacity <= MINIMAL_DOCUMENT_CAPACITY) { desired_capacity = MINIMAL_DOCUMENT_CAPACITY; }
   // If we don't have enough capacity, (try to) automatically bump it.
   // If the document needs allocation, do it too.
   // Both in one if statement to minimize unlikely branching.

