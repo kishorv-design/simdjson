@@ -1,0 +1,48 @@
+{
+  "upload_directory": "/tmp/files/",
+  "output_directory": "/tmp/outputs/",
+  "system_prompt": "You are an expert code reviewer. Analyze the provided codebase for bugs, security issues, and correctness problems. Provide actionable feedback. All files are located in /tmp/files",
+  "task_prompt": "You are an expert code reviewer. Your task is to analyze the simdjson JSON parser codebase. This C++ library implements a two-stage parser (structural indexing then tape building), DOM and ondemand APIs, document streaming (parse_many), number and string parsing with UTF-8/surrogate handling, and error handling. Identify subtle bugs, correctness issues, API contract drift, concurrency/race problems, tape or buffer layout issues, and numeric/encoding edge cases in core parsing and iteration paths. Focus on issues detectable via static analysis. Write your findings to /tmp/outputs/review.md.",
+  "rubric": [
+    {
+      "criterion": "Identifies B03: In src/generic/stage2/tape_builder.h in visit_root_number(), the padding memset uses SIMDJSON_PADDING - 1 instead of SIMDJSON_PADDING. The correct behavior is to pad the copied number buffer with SIMDJSON_PADDING space bytes so parse_number sees a space-terminated value; using one byte less leaves one byte unpadded so the parser can read past the copy or treat garbage as part of the number.",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies B08: In src/generic/stage1/json_structural_indexer.h in finish(), the first padding slot is set to uint32_t(len - 1) instead of uint32_t(len). The correct value is len so that repeated padding position and at-end detection are correct; using len-1 breaks the padding invariant and can cause wrong at-end detection or advance into the wrong region.",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies B10: In src/generic/stage1/find_next_document_index.h in find_next_document_index(), when the last document is incomplete the function returns i + 1 instead of i. The correct behavior is to return i so the next document starts at structural index i; returning i+1 shifts the streaming batch boundary and can drop or duplicate documents at batch edges.",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies B12: In src/generic/stage1/json_structural_indexer.h in finish(), the third padding/sentinel slot is set to 1 instead of 0. The correct value is 0 as a sentinel; using 1 can break code that assumes this slot is 0 for termination or padding checks.",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies B50: In include/simdjson/error-inl.h in error_message(error_code), when int(error) is out of range the code returns internal::error_codes[0].message. The correct behavior is to either bounds-check and return a safe fallback or avoid calling with invalid codes; returning error_codes[0] for invalid error codes gives a misleading message (wrong error string for corrupted or out-of-range codes).",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies B52: In src/generic/stage1/json_structural_indexer.h in trim_partial_utf8(), for the 4-byte UTF-8 lead branch (buf[len-3] >= 0xf0) the return is len-2 instead of len-3. The correct behavior is to trim three bytes when only three bytes of a 4-byte sequence are left; returning len-2 trims one byte too few and leaves a partial UTF-8 sequence in the buffer, causing UTF8_ERROR on the next batch or valid bytes trimmed.",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies B55: In include/simdjson/generic/numberparsing.h, when the parsed value is negative zero (-0 or -0.0) the code writes 0.0 to tape instead of -0.0 (e.g. WRITE_DOUBLE(0.0) in the exponent underflow path and in the SIMDJSON_MINUS_ZERO_AS_FLOAT integer path). The correct behavior is to preserve -0.0 so get_double() and signbit() match JSON; writing 0.0 loses the sign of zero.",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies B56: In include/simdjson/generic/ondemand/parser-inl.h in iterate_many(), the condition is allow_comma_separated && batch_size <= len instead of batch_size < len. The correct behavior is to set batch_size = len only when batch_size < len so the whole buffer is one batch in comma-separated mode; using <= changes behavior when batch_size == len (no-op) and when batch_size > len sets batch_size = len, changing batching for buffers smaller than default batch size.",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies B57: In include/simdjson/dom/array-inl.h in array::at(), the loop counter starts at 1 instead of 0 (size_t i=1). The correct behavior is to start at 0 so at(0) returns the first element; starting at 1 makes at(0) return INDEX_OUT_OF_BOUNDS and at(k) return the (k-1)-th element, and at(size()-1) returns INDEX_OUT_OF_BOUNDS.",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies B58: In include/simdjson/dom/object-inl.h in object::end(), the return is internal::tape_ref(tape.doc, tape.matching_brace_index() - 1) instead of tape.after_element() - 1. The correct behavior is to return the tape_ref one slot before after_element() so the end iterator is the last key-value pair; using matching_brace_index() - 1 ends one slot earlier so the last key is never seen and object[\"last_key\"] returns NO_SUCH_FIELD.",
+      "weight": 1
+    }
+  ]
+}

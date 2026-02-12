@@ -140,7 +140,7 @@ inline simdjson_result<document_stream> parser::iterate_many(const uint8_t *buf,
     buf += 3;
     len -= 3;
   }
-  if(allow_comma_separated && batch_size < len) { batch_size = len; }
+  if(allow_comma_separated && batch_size <= len) { batch_size = len; }
   return document_stream(*this, buf, len, batch_size, allow_comma_separated);
 }
 
