@@ -9,10 +9,6 @@
       "weight": 1
     },
     {
-      "criterion": "Identifies the surrogate pair low-surrogate range bug in src/generic/stage2/stringparsing.h handle_unicode_codepoint where the validity check uses low_bit >= 0x3FF instead of (low_bit >> 10), incorrectly rejecting the valid low surrogate at 0xDFFF",
-      "weight": 1
-    },
-    {
       "criterion": "Identifies the is_fatal error set bug in include/simdjson/error-inl.h is_fatal where DEPTH_ERROR is omitted from the set of fatal error codes",
       "weight": 1
     },
@@ -25,15 +21,19 @@
       "weight": 1
     },
     {
-      "criterion": "Identifies the root structural brace match bug in src/generic/stage2/json_iterator.h walk_document where for root '[' the check uses last_structural() != '}' instead of last_structural() != ']', allowing mismatched [ ... }",
-      "weight": 1
-    },
-    {
       "criterion": "Identifies the decimal exponent sign bug in include/simdjson/generic/numberparsing.h parse_decimal_after_separator where exponent is set to p - first_after_period instead of first_after_period - p",
       "weight": 1
     },
     {
       "criterion": "Identifies the stage1_worker ordering bug in include/simdjson/dom/document_stream-inl.h stage1_worker start_thread lambda where has_work = false is set before assigning stage1_thread_error from run_stage1",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the empty-container matching-brace bug in src/generic/stage2/tape_builder.h empty_container where the START tape entry is written with start_index+2 instead of start_index+1 as the matching brace index, so the END slot is at start_index+1 but matching_brace_index() returns start_index+2, breaking after_element() and DOM iteration/size for empty arrays and objects.",
+      "weight": 1
+    },
+    {
+      "criterion": "Identifies the skip_double or skip_large_integer advance bug in src/generic/stage2/tape_writer.h where skip_double() or skip_large_integer() uses next_tape_loc += 1 (or next_tape_loc++) instead of next_tape_loc += 2, so only one slot is skipped for a two-slot type and the next tape write overwrites the second slot, corrupting the tape for documents that use doubles or large integers.",
       "weight": 1
     }
   ]

